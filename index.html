@@ -189,10 +189,15 @@ input[type=text]{font:inherit;font-size:16px;font-weight:700;width:100%;padding:
  const tab=uid+'_'+Math.random().toString(36).slice(2,8);
  const clean=o=>JSON.parse(JSON.stringify(o==null?null:o));
  let room=null;
- function makeRoom(){const d=init(),base=d.ref('pq/room'),me=base.child(tab);let mine={},list=[],cbs=[];
-  const push=()=>me.set(clean({...mine,_t:firebase.database.ServerValue.TIMESTAMP}));
+ function makeRoom(){const d=init(),base=d.ref('pq/room'),me=base.child(tab);let mine={},list=[],cbs=[],raw={},off=0;
+  const push=()=>me.set(clean({...mine,_t:firebase.database.ServerValue.TIMESTAMP})).catch(()=>{});
+  d.ref('.info/serverTimeOffset').on('value',s=>{off=s.val()||0});
   d.ref('.info/connected').on('value',s=>{if(s.val()){me.onDisconnect().remove();push()}});
-  base.on('value',snap=>{const v=snap.val()||{},cut=Date.now()-6*3600e3;list=Object.keys(v).filter(k=>!v[k]._t||v[k]._t>cut).map(k=>({peer:k,isMe:k.split('_')[0]===uid,sameTab:k===tab,presence:v[k]||{}}));for(const f of cbs){try{f({peers:list})}catch(e){}}});
+  const emit=()=>{const cut=Date.now()+off-60000;list=Object.keys(raw).filter(k=>k===tab||(raw[k]&&raw[k]._t&&raw[k]._t>cut)).map(k=>({peer:k,isMe:k.split('_')[0]===uid,sameTab:k===tab,presence:raw[k]||{}}));for(const f of cbs){try{f({peers:list})}catch(e){}}};
+  base.on('value',snap=>{raw=snap.val()||{};emit()});
+  setInterval(push,15000);setInterval(emit,10000);
+  const wake=()=>{if(!document.hidden){try{d.goOnline()}catch(e){}me.onDisconnect().remove();push()}};
+  document.addEventListener('visibilitychange',wake);window.addEventListener('focus',wake);window.addEventListener('pageshow',wake);
   return {presence(patch){for(const k in patch){if(patch[k]==null)delete mine[k];else mine[k]=patch[k]}return push()},onPeers(f){cbs.push(f);if(list.length)try{f({peers:list})}catch(e){}return()=>{cbs=cbs.filter(x=>x!==f)}},peers(){return list}}}
  const P_=p=>'pq/db/'+String(p).replace(/[.#$\[\]]/g,'_');
  const docRef=p=>({get:()=>init().ref(P_(p)).once('value').then(s=>({exists:s.exists(),id:String(p).split('/').pop(),data:()=>s.val()})),set:v=>init().ref(P_(p)).set(clean(v)),update:v=>init().ref(P_(p)).update(clean(v)),delete:()=>init().ref(P_(p)).remove()});
