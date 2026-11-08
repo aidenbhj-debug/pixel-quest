@@ -1367,7 +1367,7 @@ function update(dt){
   if(k.ArrowLeft||k.a)ix=-1;if(k.ArrowRight||k.d)ix=1;if(k.ArrowUp||k.w)iy=-1;if(k.ArrowDown||k.s)iy=1;
   const l=Math.hypot(ix,iy);P.moving=l>.15;P.ox=P.x;P.oy=P.y;
   if(P.moving){const nx=ix/Math.max(1,l),ny=iy/Math.max(1,l);P.fx=nx/(Math.hypot(nx,ny)||1);P.fy=ny/(Math.hypot(nx,ny)||1);if(Math.abs(nx)>.1)P.flip=nx<0;
-   const sp=70*P.S.spd*dt*(P.slowT&&now()<P.slowT?.5:1);moveEnt(MAP,P,nx*sp,ny*sp,4*P.S.scale,canFly())}
+   const sp=110*P.S.spd*dt*(P.slowT&&now()<P.slowT?.5:1);moveEnt(MAP,P,nx*sp,ny*sp,4*P.S.scale,canFly())}
   if(P.task){if(Math.hypot(P.x-P.task.x,P.y-P.task.y)>6)cancelTask();else{P.task.t+=dt;const pr=$('#prog');pr.style.display='block';pr.querySelector('i').style.width=Math.min(100,P.task.t/P.task.need*100)+'%';$('#progt').textContent=P.task.label;if(P.task.t>=P.task.need)finishTask()}}
   // 포탈
   const tx=Math.floor(P.x/TS),ty=Math.floor((P.y-2)/TS);
