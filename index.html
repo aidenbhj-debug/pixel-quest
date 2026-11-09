@@ -1716,8 +1716,15 @@ async function loadSlotsRemote(){if(!DB||!UID)return;
  const docs=await Promise.all([...Array(MAXSLOT).keys()].map(i=>DB.doc(`data/users/${UID}/char${i}`).get().catch(()=>null)));
  let any=false;docs.forEach((d,i)=>{if(d&&d.exists){try{const v=JSON.parse(d.data().save);any=true;if(!SLOTS[i]||(v.savedAt||0)>(SLOTS[i].savedAt||0)){SLOTS[i]=v;try{localStorage.setItem(SLOT_KEY(i),JSON.stringify(v))}catch(e){}}}catch(e){}}});
  if(!any&&SLOTS.every(x=>!x)){try{const d=await DB.doc(`data/users/${UID}/save4`).get();if(d.exists){const v=JSON.parse(d.data().save);v.slot=0;SLOTS[0]=v}}catch(e){}}}
+/* ===== 같은 캐릭터를 두 창에서 열 때 덮어쓰기(롤백) 방지 ===== */
+const SID_=Math.random().toString(36).slice(2,10)+Date.now().toString(36);let lockWarned=false;
+const ownKey=i=>'pqo-owner-'+i;
+function claimSlot(){try{localStorage.setItem(ownKey(P.slot),SID_+'|'+Date.now())}catch(e){}lockWarned=false}
+function ownsSlot(){try{const v=localStorage.getItem(ownKey(P.slot));return !v||v.split('|')[0]===SID_}catch(e){return true}}
+function lockWarn(){if(lockWarned||!P)return;lockWarned=true;dialog('⚠️ 저장을 멈췄어요',`같은 캐릭터(<b>${esc(P.nick)}</b>)가 <b>다른 창이나 탭</b>에서 열렸어요.<br>두 창이 서로 덮어써서 진행이 되돌아가는 걸 막기 위해 <b>이 창의 저장을 멈췄어요.</b><br><span class="muted">이 창을 닫거나, 아래 버튼으로 가장 최신 저장을 불러와 이 창에서 계속하세요.</span>`,[{t:'최신 저장 불러와서 이 창에서 계속',pri:1,f:()=>{let v=null;try{v=JSON.parse(localStorage.getItem(SLOT_KEY(P.slot)))}catch(e){}if(v){v.slot=P.slot;startGame(v)}else claimSlot()}}])}
+addEventListener('storage',e=>{if(P&&P.slot!=null&&e.key===ownKey(P.slot)&&e.newValue&&e.newValue.split('|')[0]!==SID_)lockWarn()});
 function save(force){
- if(!P||P.slot==null)return;const s=snapshot();SLOTS[P.slot]=s;lastSaveAt=Date.now();try{localStorage.setItem(SLOT_KEY(P.slot),JSON.stringify(s))}catch(e){}
+ if(!P||P.slot==null)return;if(!ownsSlot()){lockWarn();return}const s=snapshot();SLOTS[P.slot]=s;lastSaveAt=Date.now();try{localStorage.setItem(SLOT_KEY(P.slot),JSON.stringify(s))}catch(e){}
  if(DB&&UID&&(force||Date.now()-lastDbSave>30000)){lastDbSave=Date.now();DB.doc(`data/users/${UID}/char${P.slot}`).set({save:JSON.stringify(s),at:Date.now()}).catch(()=>{})}
 }
 function deleteSlot(i){SLOTS[i]=null;try{localStorage.removeItem(SLOT_KEY(i))}catch(e){}if(DB&&UID)DB.doc(`data/users/${UID}/char${i}`).delete().catch(()=>{})}
@@ -2483,7 +2490,7 @@ function openCreate(slot){
 function showUI(on){for(const id of ['#hud','#top','#acts','#joyhint','#mini'])$(id).hidden=!on;placeMini()}
 function startGame(c){
  if(c.slot==null){c.slot=Math.max(0,SLOTS.findIndex(x=>!x))}
- P=c;P.fx=1;P.fy=0;P.buffs=[];P.cd={};P.dead=false;P.task=null;P.shield=null;for(const k of ['acd','atkT','inv','lastHurt','undT','prayT','gateT','flash'])P[k]=0;P.st=Object.assign({kills:0,ores:0,uses:0,dragon:0,bosses:0,deaths:0},P.st);P.kc=P.kc||{};P.toilet=P.toilet||0;P.pray=P.pray||0;
+ P=c;claimSlot();P.fx=1;P.fy=0;P.buffs=[];P.cd={};P.dead=false;P.task=null;P.shield=null;for(const k of ['acd','atkT','inv','lastHurt','undT','prayT','gateT','flash'])P[k]=0;P.st=Object.assign({kills:0,ores:0,uses:0,dragon:0,bosses:0,deaths:0},P.st);P.kc=P.kc||{};P.toilet=P.toilet||0;P.pray=P.pray||0;
  if(!JD[P.job]){P.job='none';P.hist=['none']}
  if(!P.loot)P.loot={};if(!P.bag)P.bag=[];if(!P.bag.some(i=>(i.slot||'w')==='w')){const st=makeWeapon('stick',1,0);st.enh=P.wpn||0;P.bag.unshift(st);P.weq=st.uid}if(!P.bag.find(i=>i.uid===P.weq&&(i.slot||'w')==='w'))P.weq=P.bag.find(i=>(i.slot||'w')==='w').uid;
  if(!P.bag.some(i=>i.slot==='a')){const ar=makeArmor('cloth',1,0);ar.enh=P.arm||0;P.bag.push(ar);P.aeq=ar.uid}if(!P.bag.find(i=>i.uid===P.aeq&&i.slot==='a'))P.aeq=P.bag.find(i=>i.slot==='a').uid;
