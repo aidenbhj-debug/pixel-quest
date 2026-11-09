@@ -1159,9 +1159,9 @@ function killMon(m,byPlayer){
  if(!MAP.raid&&(m.boss||Math.random()<.11*dm)){const types=Object.keys(WTYPE).filter(x=>x!=='stick');const ty=MON_W[m.k]&&Math.random()<.6?MON_W[m.k]:pick(types);drop({w:makeWeapon(ty,m.lv,rollRar(m.boss,m.lv,rl))});
   if(m.boss&&Math.random()<.5){const own=ARCH_W[J().arch]||types;drop({w:makeWeapon(pick(own.filter(x=>x!=='stick').length?own.filter(x=>x!=='stick'):types),m.lv,rollRar(true,m.lv,rl))})}}
  P.kc[m.k]=(P.kc[m.k]||0)+1;uniDrops(m);
- if(P.mq&&P.mq[MAP.id]){const q=P.mq[MAP.id];if(q.c<q.n&&q.k===m.k){q.c++;if(q.c>=q.n){toast(`🗺️ ${MAP.name} 의뢰 완료! 의뢰인에게 돌아가세요`);sfx('coin')}}}
+ if(P.mq&&P.mq[MAP.id]){const q=P.mq[MAP.id];if(q.c<q.n&&q.k===m.k){q.c++;if(q.c>=q.n){const id_=MAP.id;setTimeout(()=>mqComplete(id_),0)}}}
  if((MAP.id==='divine'||MAP.id==='p_divine')&&P.job==='god'){P.relic=P.relic||{};if(m.boss&&m.k==='fallenGod'&&Math.random()<.01){P.relic.gem=(P.relic.gem||0)+1;toast('💎 선함이 깃든 보석을 얻었다!');sfx('rare')}if(!m.boss&&!m.summoned&&Math.random()<.01){P.relic.key=(P.relic.key||0)+1;toast('🗝️ 던전 열쇠를 얻었다!');sfx('rare')}}
- if(P.quest&&P.quest.type==='kill'&&P.quest.k===m.k&&P.quest.c<P.quest.n){P.quest.c++;if(P.quest.c>=P.quest.n)toast('📜 미션 완료! 마을 이장에게 돌아가세요')}
+ if(P.quest&&P.quest.type==='kill'&&P.quest.k===m.k&&P.quest.c<P.quest.n){P.quest.c++;if(P.quest.c>=P.quest.n)setTimeout(chiefComplete,0)}
  if(m.boss){P.st.bosses++;toast(`👑 ${eul(m.name)} 쓰러뜨렸다! +${gold}G`);sysChat(`${P.nick}님이 ${eul(m.name)} 처치했습니다!`);if(m.k==='dragon')P.st.dragon++}
  gainExp(exp);
 }
@@ -1313,11 +1313,11 @@ function cancelTask(){P.task=null;$('#prog').style.display='none'}
 function finishTask(){
  const k=P.task;P.task=null;$('#prog').style.display='none';
  if(k.type==='mine'){const o=ORES[k.ref.type];const dbl=Math.random()<.03*(TV('vein')||0)+({min:.15,vmn:.3}[P.job]||0);const n=dbl?2:1;
-  P.ores[k.ref.type]=(P.ores[k.ref.type]||0)+n;P.st.ores+=n;k.ref.dead=now()+40;sfx('mine');if(P.quest&&P.quest.type==='ore'&&P.quest.k===k.ref.type&&P.quest.c<P.quest.n){P.quest.c=Math.min(P.quest.n,P.quest.c+n);if(P.quest.c>=P.quest.n)toast('📜 미션 완료! 마을 이장에게 돌아가세요')}
+  P.ores[k.ref.type]=(P.ores[k.ref.type]||0)+n;P.st.ores+=n;k.ref.dead=now()+40;sfx('mine');if(P.quest&&P.quest.type==='ore'&&P.quest.k===k.ref.type&&P.quest.c<P.quest.n){P.quest.c=Math.min(P.quest.n,P.quest.c+n);if(P.quest.c>=P.quest.n)setTimeout(chiefComplete,0)}
   ftxt(k.ref.x,k.ref.y-14,`+${n} ${o.n}`,o.c,dbl);fx({type:'puff',x:k.ref.x,y:k.ref.y-4,life:.4,col:o.c});
   }
  else if(k.type==='fish'){const r=Math.random(),rare=P.job==='fis'?.06:.02;const f=r<rare?'gcarp':r<.25?'trout':r<.55?'carp':'crucian';
-  P.fish[f]=(P.fish[f]||0)+1;sfx('splash');if(P.quest&&P.quest.type==='fish'&&P.quest.c<P.quest.n){P.quest.c++;if(P.quest.c>=P.quest.n)toast('📜 미션 완료! 마을 이장에게 돌아가세요')}ftxt(P.x,P.y-24,`🐟 ${FISH[f].n}!`,f==='gcarp'?'#ffd84a':'#9fd8ff',f==='gcarp');if(f==='gcarp')sysChat(`${P.nick}님이 황금 잉어를 낚았습니다!`)}
+  P.fish[f]=(P.fish[f]||0)+1;sfx('splash');if(P.quest&&P.quest.type==='fish'&&P.quest.c<P.quest.n){P.quest.c++;if(P.quest.c>=P.quest.n)setTimeout(chiefComplete,0)}ftxt(P.x,P.y-24,`🐟 ${FISH[f].n}!`,f==='gcarp'?'#ffd84a':'#9fd8ff',f==='gcarp');if(f==='gcarp')sysChat(`${P.nick}님이 황금 잉어를 낚았습니다!`)}
 }
 
 /* ================= 맵 이동 ================= */
@@ -2061,6 +2061,15 @@ function gogTalk(n){P.gog=P.gog||{};P.relic=P.relic||{};const r5=(P.raids&&P.rai
 /* ===== 사냥터 의뢰 / 정보상 ===== */
 function dirText(m,x,y){const dx=x-m.w*TS/2,dy=y-m.h*TS/2;const ns=dy<-m.h*TS*.15?'북':dy>m.h*TS*.15?'남':'',ew=dx<-m.w*TS*.15?'서':dx>m.w*TS*.15?'동':'';return ns+ew?ns+ew+'쪽':'한가운데'}
 function newMapQuest(m){const boss=m.boss&&Math.random()<.25;if(boss)return {k:m.boss.k,n:1,c:0,boss:1};const s_=pick(m.spawns);return {k:s_.k,n:RI(10,20),c:0}}
+/* ===== 의뢰 완료 즉시 보상 ===== */
+function questBanner(title,exp,gold,extra){sfx('fanfare');toast(`🎉 ${title} 완료! +${exp.toLocaleString()} EXP · +${gold.toLocaleString()}G${extra?' · '+extra:''}`);addChat('',`🎉 ${title} 완료 — 경험치 ${exp.toLocaleString()}, ${gold.toLocaleString()}G${extra?', '+extra:''}`,'sys')}
+function chiefComplete(){const q=P.quest;if(!q||q.c<q.n||q.done)return;q.done=1;
+ const exp=Math.round(need(P.lv)*QUEST_EXP_CHIEF),gold=50+P.lv*25;P.quest=null;P.qn=(P.qn||0)+1;P.gold+=gold;P.items.potion=(P.items.potion||0)+2;
+ questBanner('이장의 미션',exp,gold,'🧪 물약 2개');gainExp(exp);P.quest=newQuest();setTimeout(()=>toast(`📜 새 미션: ${questText(P.quest)}`),1800);save(true)}
+function mqComplete(id){const m=MAPS[id],q=P.mq&&P.mq[id];if(!m||!q||q.c<q.n||q.done)return;q.done=1;
+ const exp=Math.round(need(P.lv)*QUEST_EXP_MQ*(q.boss?1.5:1)),gold=Math.round((m.minLv*30+200)*(q.boss?2:1)),pot=P.lv>=15?'hipot':'potion';
+ P.mqDone=P.mqDone||{};const u=m.uni||uniOf();P.mqDone[u]=(P.mqDone[u]||0)+1;P.gold+=gold;P.items[pot]=(P.items[pot]||0)+2;
+ questBanner(`${m.name} 의뢰`,exp,gold,`${CONS[pot].e} ${CONS[pot].n} 2개`);gainExp(exp);P.mq[id]=newMapQuest(m);const nq=P.mq[id];setTimeout(()=>toast(`🗺️ 새 의뢰: ${MD[nq.k][0]} ${nq.n}${nq.boss?'번':'마리'} 처치`),1800);save(false)}
 function mqTalk(n){P.mq=P.mq||{};const m=MAP,q=P.mq[m.id];
  const local=m.npcs.filter(x=>x.role==='trainer'&&!x.hidden&&!x.job.startsWith('fin_'));
  const near=local.length?{t:'🧭 이 근처 스승 정보',f:()=>dialog(n.name,local.map(x=>`⭐ <b>${JD[x.job][0]}</b> 스승 ${esc(x.name)} — 이 지역 <b>${dirText(m,x.x,x.y)}</b> (Lv ${reqLv(x.job)})`).join('<br>'),[])}:null;
