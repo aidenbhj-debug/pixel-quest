@@ -2086,11 +2086,11 @@ function questProgress(type,k,n){for(const q of getCQ()){if(q.type!==type||q.c>=
 function mqProgress(id,k){for(const q of getMQ(id)){if(q.k!==k||q.c>=q.n||q.done)continue;q.c++;if(q.c>=q.n){const qq=q;setTimeout(()=>mqComplete(id,qq),0)}}}
 function chiefComplete(q){const arr=getCQ();if(!q||q.done||q.c<q.n)return;q.done=1;
  const exp=Math.round(need(P.lv)*QUEST_EXP_CHIEF),gold=50+P.lv*25;arr.splice(arr.indexOf(q),1);P.qn=(P.qn||0)+1;P.gold+=gold;P.items.potion=(P.items.potion||0)+2;
- questBanner('이장의 미션',exp,gold,'🧪 물약 2개');gainExp(exp);const nq=newQuest();arr.push(nq);setTimeout(()=>toast(`📜 새 미션: ${questText(nq)}`),1800);save(true)}
+ questBanner('이장의 미션',exp,gold,'🧪 물약 2개');gainExp(exp);setTimeout(()=>toast('📜 새 미션은 마을 이장에게 받을 수 있어요'),1800);save(true)}
 function mqComplete(id,q){const m=MAPS[id],arr=getMQ(id);if(!m||!q||q.done||q.c<q.n)return;q.done=1;
  const exp=Math.round(need(P.lv)*QUEST_EXP_MQ*(q.boss?1.5:1)),gold=Math.round((m.minLv*30+200)*(q.boss?2:1)),pot=P.lv>=15?'hipot':'potion';
  arr.splice(arr.indexOf(q),1);P.mqDone=P.mqDone||{};const u=m.uni||uniOf();P.mqDone[u]=(P.mqDone[u]||0)+1;P.gold+=gold;P.items[pot]=(P.items[pot]||0)+2;
- questBanner(`${m.name} 의뢰`,exp,gold,`${CONS[pot].e} ${CONS[pot].n} 2개`);gainExp(exp);const nq=newMapQuest(m);arr.push(nq);setTimeout(()=>toast(`🗺️ 새 의뢰: ${MD[nq.k][0]} ${nq.n}${nq.boss?'번':'마리'} 처치`),1800);save(false)}
+ questBanner(`${m.name} 의뢰`,exp,gold,`${CONS[pot].e} ${CONS[pot].n} 2개`);gainExp(exp);setTimeout(()=>toast(`🗺️ 새 의뢰는 ${m.name} 의뢰인에게 받을 수 있어요`),1800);save(false)}
 function qbrokerTalk(n){const s_=QSLOTS();const nx=s_+1,price=QSLOT_PRICE[nx];
  dialog(n.name,`차원을 건너온 모험가로군. 나는 여러 우주의 의뢰를 중개하지.<br>지금 자네는 의뢰인 한 명에게서 <b>한 번에 ${s_}개</b>까지 의뢰를 받을 수 있네.${s_<5?`<br>계약서를 늘리면 <b>${nx}개</b>까지 동시에 받을 수 있지. 값은 <b>${price.toLocaleString()}G</b>일세.`:'<br>이미 최대(5개)일세. 더 해 줄 게 없군.'}<br><span class="muted">마을 이장의 미션과 각 사냥터 의뢰에 모두 적용돼요.</span>`,
   s_<5?[{t:`📜 의뢰 계약서 (+1칸) · ${price.toLocaleString()}G`,pri:1,dis:P.gold<price,f:()=>{if(P.gold<price){toast('골드가 부족합니다');return}P.gold-=price;P.qslots=nx;sfx('fanfare');toast(`📜 이제 한 번에 의뢰를 ${nx}개까지 받을 수 있어요!`);save(true)}}]:[])}
@@ -2100,7 +2100,7 @@ function mqTalk(n){const m=MAP,arr=getMQ(m.id),slots=QSLOTS();
  const list=arr.map(q=>`🗺️ <b>${MD[q.k][0]} ${q.n}${q.boss?'번':'마리'} 처치</b>${q.boss?' <span class="tag">보스</span>':''} — ${q.c}/${q.n}`).join('<br>');
  const opts=[];if(arr.length<slots)opts.push({t:`🗺️ 의뢰 받기 (${arr.length}/${slots})`,pri:1,f:()=>{P.mq[m.id]=arr;arr.push(newMapQuest(m));toast('🗺️ 의뢰를 받았습니다');save(false);setTimeout(()=>mqTalk(n),200)}});
  if(arr.length)opts.push({t:'의뢰 전부 새로 받기',f:()=>{const k=arr.length;arr.length=0;for(let i=0;i<k;i++)arr.push(newMapQuest(m));toast('🗺️ 의뢰를 새로 받았습니다');save(false)}});if(near)opts.push(near);
- dialog(n.name,`${arr.length?'지금 맡은 의뢰일세. 끝내는 즉시 보상을 보내 주지.':`${m.name}에 온 걸 환영하네. 마침 일손이 필요했지.`}<br>${list||''}<br><span class="muted">한 번에 ${slots}개까지 받을 수 있어요. 끝내면 다음 의뢰가 자동으로 이어져요.</span>`,opts)}
+ dialog(n.name,`${arr.length?'지금 맡은 의뢰일세. 끝내는 즉시 보상을 보내 주지.':`${m.name}에 온 걸 환영하네. 마침 일손이 필요했지.`}<br>${list||''}<br><span class="muted">한 번에 ${slots}개까지 받을 수 있어요. 끝내면 보상은 바로 들어오고, 다음 의뢰는 다시 받으러 와야 해요.</span>`,opts)}
 
 const RUMORS={poo:'마을 동쪽 초원 구석에서 이상한 냄새를 풍기는 철학자를 봤다는 사람이 있어. 화장실을 자주 들락거리는 사람을 좋아한다나?',
  spi:'성당 안쪽 샘물에서 정령이 속삭인대. 기도를 많이 하고, 망령과 리치를 쓰러뜨린 자를 기다린다더군.',
@@ -2210,7 +2210,7 @@ function chiefTalk(n){n.flip=P.x<n.x;const arr=getCQ(),slots=QSLOTS();
  const list=arr.map(q=>`📜 <b>${questText(q)}</b> — ${q.c}/${q.n}`).join('<br>');
  const opts=[];if(arr.length<slots)opts.push({t:`📜 미션 받기 (${arr.length}/${slots})`,pri:1,f:()=>{arr.push(newQuest());toast('📜 미션을 받았습니다');save(false);setTimeout(()=>chiefTalk(n),200)}});
  if(arr.length)opts.push({t:'미션 전부 새로 받기',f:()=>{const k=arr.length;arr.length=0;for(let i=0;i<k;i++)arr.push(newQuest());toast('📜 미션을 새로 받았습니다');save(false)}});
- dialog(n.name,`${intro}${list}<br><span class="muted">한 번에 ${slots}개까지 받을 수 있어요. 끝내면 다음 미션이 자동으로 이어져요.</span>`,opts)}
+ dialog(n.name,`${intro}${list}<br><span class="muted">한 번에 ${slots}개까지 받을 수 있어요. 끝내면 보상은 바로 들어오고, 다음 미션은 다시 받으러 와야 해요.</span>`,opts)}
 /* ================= 스킬 트리 ================= */
 let treeTab=0;
 function openTree(){
