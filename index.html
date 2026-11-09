@@ -588,12 +588,14 @@ const ATYPE={cloth:{n:'옷',m:.3},robe:{n:'로브',m:.75,mp:12},leather:{n:'가�
 const ARCH_A={sword:'plate',spear:'plate',tank:'plate',brute:'chain',beast:'chain',bow:'leather',rogue:'leather',craft:'leather',magic:'robe',holy:'robe',bard:'robe',commoner:'cloth'};
 const AMAT={robe:['리넨','양모','비단','마력의','성스러운','천상의','구름결','심연의','혼돈의','신성한','차원의','성운의','태초의'],leather:['토끼','늑대','곰','와이번','마수','용','그리핀','공허','키메라','신수','차원수','성운수','태초수'],chain:['구리','철','강철','은빛','미스릴','용골','천공석','심연','혼돈','신성','차원','성운','태초'],plate:['구리','철','강철','은빛','미스릴','용골','천공석','심연','혼돈','신성','차원','성운','태초']};
 const ARM_ART=[".mm...mm.","mMmmmmmMm","mmmmmmmmm",".mmaaamm.",".mmmmmmm.",".mmmmmmm.","..mmmmm..","........."];
-function makeArmor(type,lv,rar){const t=ATYPE[type],R_=RAR[rar];const def=type==='cloth'?1:Math.round((2+lv*1.3)*t.m*R_.x);
+const PART_M={h:.35,l:.45,f:.3},PART_N={h:'투구',l:'레깅스',f:'신발'},PART_K={h:'heq',l:'leq',f:'feq'};
+function randPart(){const r=Math.random();return r<.4?undefined:r<.6?'h':r<.8?'l':'f'}
+function makeArmor(type,lv,rar,part){const t=ATYPE[type],R_=RAR[rar];const def=type==='cloth'?1:Math.max(1,Math.round((2+lv*1.3)*t.m*R_.x*(part?PART_M[part]:1)));
  const bn={};const pool=['hp','dodge','mp'];const nb=rar>=6?3:rar>=4?2:rar>=2?1:0;for(let i=0;i<nb;i++){const k=pool.splice(Math.floor(Math.random()*pool.length),1)[0];bn[k]=k==='hp'?6+Math.floor(Math.random()*6)+rar*2:k==='dodge'?2+Math.floor(Math.random()*3)+rar:8+Math.floor(Math.random()*6)+rar*2}
  if(t.mp)bn.mp=(bn.mp||0)+t.mp;if(t.dodge)bn.dodge=(bn.dodge||0)+t.dodge;
  const band=lv<10?0:lv<25?1:lv<45?2:lv<65?3:lv<85?4:lv<150?5:lv<350?6:lv<600?7:lv<800?8:lv<1500?9:lv<2500?10:lv<3500?11:12;
- const name=type==='cloth'?'낡은 옷':[RAR_PRE[rar],AMAT[type][band],t.n].filter(Boolean).join(' ');
- return {uid:'a'+(UIDC++)+Math.floor(Math.random()*1000),slot:'a',type,name,rar,lv,def,hp:def*4,bn,enh:0};
+ const name=type==='cloth'?'낡은 옷':[RAR_PRE[rar],AMAT[type][band],part?PART_N[part]:t.n].filter(Boolean).join(' ');
+ const it={uid:'a'+(UIDC++)+Math.floor(Math.random()*1000),slot:'a',type,name,rar,lv,def,hp:def*4,bn,enh:0};if(part)it.part=part;return it;
 }
 /* ================= 유틸 ================= */
 const $=s=>document.querySelector(s);
@@ -620,6 +622,14 @@ function drawWeapon(type,rar,tpl,x,y,sc,flip,atk){const h=HAND[tpl]||[12,9];cons
  else ctx.drawImage(wspr(type,rar,flip),Math.round(px),Math.round(py),7*sc,13*sc)}
 function curWeapon(){return P&&P.bag?P.bag.find(i=>i.uid===P.weq):null}
 function curArmor(){return P&&P.bag?P.bag.find(i=>i.uid===P.aeq):null}
+function partKey(p){return PART_K[p]||'aeq'}
+function eqOf(it){if(!P||!P.bag)return null;if((it.slot||'w')!=='a')return curWeapon();const k=partKey(it.part);return P.bag.find(i=>i.uid===P[k])}
+function isEquipped(it){return !!P&&[P.weq,P.aeq,P.heq,P.leq,P.feq].includes(it.uid)}
+function equipItem(it){if((it.slot||'w')!=='a')P.weq=it.uid;else P[partKey(it.part)]=it.uid}
+function armList(){if(!P||!P.bag)return [];return ['aeq','heq','leq','feq'].map(k=>P.bag.find(i=>i.uid===P[k])).filter(Boolean)}
+function armSum(fn){return armList().reduce((a,i)=>a+fn(i),0)}
+function armBn(){const o={};for(const i of armList())for(const k in (i.bn||{}))o[k]=(o[k]||0)+i.bn[k];return o}
+function partName(it){return (it.slot||'w')!=='a'?'':it.part?PART_N[it.part]:'갑옷'}
 function fitA(it){return it&&ARCH_A[J().arch]===it.type}
 function aMul(it){return (1+.08*(it.enh||0))*(fitA(it)?1.25:1)*(1+.05*((P.tree&&TV('armor'))||0))}
 function aDef(it){return it?Math.round(it.def*aMul(it)):0}
@@ -1057,7 +1067,7 @@ function newChar(nick){
 function J(){return JOB(P.job)}
 function calc(){
  const j=J(),a=ARCH[j.arch],lv=P.lv,tb=P.job==='none'?1:1+.12*(j.tier-1),T=buildTE(),t=now();
- const wp=curWeapon(),wb=wp?wp.bn||{}:{},ar=curArmor(),ab=ar?ar.bn||{}:{};let hp=(a.hp+a.hg*(lv-1))*tb+aHp(ar),mp=(a.mp+a.mg*(lv-1))*tb,atk=(a.atk+a.ag*(lv-1))*tb+wAtk(wp),def=(a.def+a.dg*(lv-1))*tb+aDef(ar);hp*=1+((wb.hp||0)+(ab.hp||0))/100;mp*=1+(ab.mp||0)/100;
+ const wp=curWeapon(),wb=wp?wp.bn||{}:{},ar=curArmor(),ab=armBn();let hp=(a.hp+a.hg*(lv-1))*tb+armSum(aHp),mp=(a.mp+a.mg*(lv-1))*tb,atk=(a.atk+a.ag*(lv-1))*tb+wAtk(wp),def=(a.def+a.dg*(lv-1))*tb+armSum(aDef);hp*=1+((wb.hp||0)+(ab.hp||0))/100;mp*=1+(ab.mp||0)/100;
  const JS_=JSTAT[P.job]||JSTAT.none;hp*=JS_[0];mp*=JS_[1];atk*=JS_[2];def*=JS_[3];if(a.style==='melee'||a.style==='thrust'){hp*=1.5;atk*=1.35;def*=1.5}
  const ma=.005*(T.m_all||0);hp*=1+.04*(T.vit||0)+.01*(T.ironwall||0)+.01*(T.t_hp||0)+ma;mp*=1+.05*(T.mpu||0)+ma;atk*=1+.015*(T.str||0)+.004*(T.t_atk||0)+ma;def*=1+.04*(T.def||0)+.02*(T.ironwall||0)+.01*(T.t_def||0)+ma;
  let crit=a.crit+(T.crt||0)+(wb.crit||0),dodge=a.dodge+(T.dodge||0)+(ab.dodge||0),spd=Math.min(2,a.spd*(1+.02*(T.move||0)+.003*(T.t_spd||0))*(1+(wb.spd||0)/100));
@@ -1095,7 +1105,7 @@ function raidTick(){const R_=W.raid;if(!R_||R_.over||!MAP.raid||!P||P.dead)retur
  if(t-R_.t0>d.time){raidEnd(false);return}
  if(R_.nextAt){if(t>=R_.nextAt){R_.nextAt=0;raidSpawnWave()}return}
  if(!W.mons.some(m=>m.hp>0)){if(R_.wave>d.waves.length)raidEnd(true);else{R_.nextAt=t+2.5;toast(R_.wave===d.waves.length?'⚠️ 곧 보스가 나타납니다!':'다음 웨이브 준비…')}}}
-function raidReward(rar,lv){const a=ARCH_W[J().arch]||['sword'];const wt=a.filter(x=>x!=='stick');const it=Math.random()<.5?makeWeapon(wt.length?pick(wt):pick(Object.keys(WTYPE).filter(x=>x!=='stick')),lv,rar):makeArmor(ARCH_A[J().arch]&&ARCH_A[J().arch]!=='cloth'?ARCH_A[J().arch]:pick(['robe','leather','chain','plate']),lv,rar);return it}
+function raidReward(rar,lv){const a=ARCH_W[J().arch]||['sword'];const wt=a.filter(x=>x!=='stick');const it=Math.random()<.5?makeWeapon(wt.length?pick(wt):pick(Object.keys(WTYPE).filter(x=>x!=='stick')),lv,rar):makeArmor(ARCH_A[J().arch]&&ARCH_A[J().arch]!=='cloth'?ARCH_A[J().arch]:pick(['robe','leather','chain','plate']),lv,rar,randPart());return it}
 function raidEnd(win){const R_=W.raid;R_.over=true;if(ROOM)ROOM.presence({rd:null}).catch(()=>{});const d=R_.def;
  if(win&&d.id==='pri_arena'){P.pri=P.pri||{};P.pri.done=true;P.frames=P.frames||{};P.frames[4]=true;const pit=raidReward(7,3000);if(P.bag.length<BAGMAX)P.bag.push(pit);save(true);sfx('fanfare');sysChat(`🌅 ${P.nick}님이 태초의 파수꾼을 쓰러뜨리고 [태초] 장비를 얻었습니다!`);window.layerLock=true;openLayer(`<h2>🌅 태초의 문이 열렸다</h2><p>파수꾼이 쓰러지고 태초의 우주로 가는 길이 열렸다. 🌌 차원 이동으로 언제든 갈 수 있다.</p><p>보상: <b style="color:${RAR[7].col};text-shadow:0 0 2px #000">[태초] ${esc(pit.name)}</b></p><button class="btn pri w" id="rback">성운의 신전으로</button>`,root=>root.querySelector('#rback').onclick=()=>{closeLayer();raidBack()});return}
  if(win&&d.id==='gogarena'){P.gog=P.gog||{};P.gog.m3=true;const git=raidReward(7,4000);if(P.bag.length<BAGMAX)P.bag.push(git);save(true);sysChat(`🌌 ${P.nick}님이 태초의 신을 쓰러뜨렸습니다!`);window.layerLock=true;openLayer(`<h2>🌌 시련 통과</h2><p>태초의 신을 쓰러뜨렸다. 태초의 성소로 돌아가 전직하라.</p><p>보상: <b style="color:${RAR[7].col};text-shadow:0 0 2px #000">[태초] ${esc(git.name)}</b></p><button class="btn pri w" id="rback">태초의 성소로</button>`,root=>root.querySelector('#rback').onclick=()=>{closeLayer();changeMap('p_gogsanc',11*TS,12*TS)});return}
@@ -1157,7 +1167,7 @@ function killMon(m,byPlayer){
  const drop=(o)=>W.drops.push({...o,x:m.x+R(-10,10),y:m.y+R(-4,6),until:now()+90,t0:now()});
  if(LOOT[m.k]&&(m.boss||Math.random()<.45))for(let i=0;i<(m.boss?3:1);i++)drop({loot:m.k,lv:m.lv});
  const dm=1+.06*(TV('drop')||0)+.02*TV('m_gold'),rl=.02*TV('rare');
- if(!MAP.raid&&(m.boss||Math.random()<.09*dm)){const at=pick(Object.keys(ATYPE).filter(x=>x!=='cloth'));drop({w:makeArmor(m.boss&&Math.random()<.6?(ARCH_A[J().arch]==='cloth'?at:ARCH_A[J().arch]):at,m.lv,rollRar(m.boss,m.lv,rl))})}
+ if(!MAP.raid&&(m.boss||Math.random()<.09*dm)){const at=pick(Object.keys(ATYPE).filter(x=>x!=='cloth'));drop({w:makeArmor(m.boss&&Math.random()<.6?(ARCH_A[J().arch]==='cloth'?at:ARCH_A[J().arch]):at,m.lv,rollRar(m.boss,m.lv,rl),randPart())})}
  if(!MAP.raid&&(m.boss||Math.random()<.11*dm)){const types=Object.keys(WTYPE).filter(x=>x!=='stick');const ty=MON_W[m.k]&&Math.random()<.6?MON_W[m.k]:pick(types);drop({w:makeWeapon(ty,m.lv,rollRar(m.boss,m.lv,rl))});
   if(m.boss&&Math.random()<.5){const own=ARCH_W[J().arch]||types;drop({w:makeWeapon(pick(own.filter(x=>x!=='stick').length?own.filter(x=>x!=='stick'):types),m.lv,rollRar(true,m.lv,rl))})}}
  P.kc[m.k]=(P.kc[m.k]||0)+1;if(byPlayer)orbDrop(m);uniDrops(m);
@@ -2168,7 +2178,7 @@ function tryFinishTrade(){if(!TR||!TR.confMe||!TR.confThem)return;
  P.gold+=TR.th.gold;const nm=peerName(TR.peer);TR=null;closeLayer();calc();save(true);toast(`🤝 ${nm}님과 거래를 마쳤습니다`)}
 function openTrade(){if(!TR)return;const T_=TR,nm=peerName(T_.peer);
  if(!T_.open){openLayer(`${head('🤝 거래')}<p>${esc(nm)}님의 응답을 기다리는 중…</p><button class="btn w" id="tcx">취소</button>`,root=>root.querySelector('#tcx').onclick=cancelTrade);return}
- const cand=P.bag.filter(i=>i.uid!==P.weq&&i.uid!==P.aeq);
+ const cand=P.bag.filter(i=>!isEquipped(i));
  const row=(it,sel)=>`<div class="row">${itemIcon(it)}<div class="f"><b style="color:${RAR[it.rar]?RAR[it.rar].col:'#fff'};text-shadow:0 0 1px #000">${esc(it.name)}${it.enh?' +'+it.enh:''} <span class="tag">${RAR[it.rar]?RAR[it.rar].n:''}</span></b><span class="muted">${it.slot==='a'?'방어 '+it.def:'공격 '+it.atk} · Lv ${it.lv}</span></div>${sel==null?'':`<button class="btn ${sel?'pri':''}" data-tsel="${it.uid}" ${T_.lockMe?'disabled':''}>${sel?'빼기':'넣기'}</button>`}</div>`;
  openLayer(`<div id="trade">${head('🤝 '+esc(nm)+'님과 거래')}
  <h3>${esc(nm)}님의 제안 ${T_.lockThem?'<span class="tag">잠금</span>':''}${T_.confThem?' <span class="tag">확인 완료</span>':''}</h3>${T_.th.items.map(it=>row(it,null)).join('')||'<p class="muted">아직 올린 물건이 없습니다</p>'}<p>💰 ${T_.th.gold.toLocaleString()}G</p>
@@ -2240,14 +2250,14 @@ const BAGUI={tab:'w',rar:-1,sort:'pow'};
 function openBag(){
  const S=P.S,cook=P.job==='chef'?3:P.job==='cook'?2:1,U=BAGUI;
  const nW=P.bag.filter(i=>(i.slot||'w')==='w').length,nA=P.bag.filter(i=>i.slot==='a').length;
- const tabs=[['w',`⚔️ 무기 ${nW}`],['a',`🛡️ 갑옷 ${nA}`],['c','🧪 소모품'],['m','📦 재료'],['s','✨ 특수'],['i','📊 능력치']];
+ const tabs=[['w',`⚔️ 무기 ${nW}`],['a',`🛡️ 방어구 ${nA}`],['c','🧪 소모품'],['m','📦 재료'],['s','✨ 특수'],['i','📊 능력치']];
  let body='';
  if(U.tab==='w'||U.tab==='a'){const sl=U.tab,eqId=sl==='a'?P.aeq:P.weq,pool=P.bag.filter(i=>(i.slot||'w')===sl);
   const cnt=r=>pool.filter(i=>i.rar===r).length;
-  const sellable=pool.filter(i=>i.uid!==eqId&&(U.rar<0||i.rar===U.rar));const sellSum=sellable.reduce((a,i)=>a+Math.round(wPrice(i)*(1+.03*TV('sell'))),0);
+  const sellable=pool.filter(i=>!isEquipped(i)&&(U.rar<0||i.rar===U.rar));const sellSum=sellable.reduce((a,i)=>a+Math.round(wPrice(i)*(1+.03*TV('sell'))),0);
   body=`<div class="tabs" style="margin-top:4px"><button class="btn ${U.rar<0?'on':''}" data-rar="-1">전체 ${pool.length}</button>${RAR.map((r,k)=>cnt(k)?`<button class="btn ${U.rar===k?'on':''}" data-rar="${k}" style="${U.rar===k?'':`color:${r.col};text-shadow:0 0 1px #000`}">${r.n} ${cnt(k)}</button>`:'').join('')}</div>
   <div class="row"><div class="f"><b>정렬</b></div><select id="bsort" style="font:inherit;padding:6px;border:2px solid var(--line);background:var(--surface2);color:var(--ink)">${[['pow','강한 순'],['rar','등급 순'],['lv','레벨 순'],['new','얻은 순']].map(([k,n])=>`<option value="${k}" ${U.sort===k?'selected':''}>${n}</option>`).join('')}</select></div>
-  ${itemRows(sl,false,{rar:U.rar,sort:U.sort})}
+  ${sl==='a'?`<div class="grid2" style="margin:6px 0">${[['aeq','🥋 갑옷'],['heq','⛑️ 투구'],['leq','👖 레깅스'],['feq','👢 신발']].map(([k,n])=>{const it=P.bag.find(i=>i.uid===P[k]);return `<div class="row" style="margin:0"><div class="f"><b>${n}</b><span class="muted">${it?esc(it.name):'비어 있음'}</span></div></div>`}).join('')}</div>`:''}${itemRows(sl,false,{rar:U.rar,sort:U.sort})}
   ${sellable.length?`<button class="btn w" id="bsellall" style="margin-top:8px">${U.rar<0?'장착 중 제외 전부':`[${RAR[U.rar].n}] 전부`} 판매 · ${sellable.length}개 · ${sellSum.toLocaleString()}G</button>`:''}`}
  else if(U.tab==='c'){body=Object.entries(CONS).map(([k,c])=>`<div class="row"><div class="f"><b>${c.e} ${c.n} ×${P.items[k]||0}</b></div><button class="btn" data-use="${k}" ${P.items[k]?'':'disabled'}>사용</button></div>`).join('')+
   `<h3>물고기 ${cook>1?`<span class="tag">요리 ×${cook}</span>`:''}</h3>${Object.keys(P.fish).filter(k=>P.fish[k]).map(k=>`<div class="row"><div class="f"><b>🐟 ${FISH[k].n} ×${P.fish[k]}</b><span class="muted">먹으면 HP ${Math.round(FISH[k].heal*cook*100)}% 회복</span></div><button class="btn" data-eat="${k}">먹기</button></div>`).join('')||'<p class="muted">마을 연못에서 낚시를 해보세요.</p>'}`}
@@ -2259,7 +2269,7 @@ function openBag(){
   root.querySelectorAll('[data-btab]').forEach(b=>b.onclick=()=>{U.tab=b.dataset.btab;U.rar=-1;openBag()});
   root.querySelectorAll('[data-rar]').forEach(b=>b.onclick=()=>{U.rar=+b.dataset.rar;openBag()});
   const so=root.querySelector('#bsort');if(so)so.onchange=()=>{U.sort=so.value;openBag()};
-  const sa=root.querySelector('#bsellall');if(sa)sa.onclick=()=>{const sl=U.tab,eqId=sl==='a'?P.aeq:P.weq;const list=P.bag.filter(i=>(i.slot||'w')===sl&&i.uid!==eqId&&i.uid!==P.weq&&i.uid!==P.aeq&&(U.rar<0||i.rar===U.rar));const sum=list.reduce((a,i)=>a+Math.round(wPrice(i)*(1+.03*TV('sell'))),0);const hi=list.some(i=>i.rar>=3);
+  const sa=root.querySelector('#bsellall');if(sa)sa.onclick=()=>{const sl=U.tab,eqId=sl==='a'?P.aeq:P.weq;const list=P.bag.filter(i=>(i.slot||'w')===sl&&!isEquipped(i)&&(U.rar<0||i.rar===U.rar));const sum=list.reduce((a,i)=>a+Math.round(wPrice(i)*(1+.03*TV('sell'))),0);const hi=list.some(i=>i.rar>=3);
    const go=()=>{const ids=new Set(list.map(i=>i.uid));P.bag=P.bag.filter(i=>!ids.has(i.uid));P.gold+=sum;sfx('coin');toast(`💰 ${list.length}개 판매 +${sum.toLocaleString()}G`);save(false);openBag()};
    ask(`${list.length}개를 ${sum.toLocaleString()}G에 판매할까요?${hi?'<br><b style="color:#ff7a3a">영웅 이상 장비가 포함되어 있어요!</b>':''}`,go,openBag)};
   root.querySelectorAll('[data-use]').forEach(b=>b.onclick=()=>{useCons(b.dataset.use);openBag()});root.querySelectorAll('[data-eat]').forEach(b=>b.onclick=()=>{const k=b.dataset.eat;P.fish[k]--;heal(P.S.hp*Math.min(1,FISH[k].heal*cook));openBag()})});
@@ -2272,22 +2282,22 @@ function itemFit(it){return it.slot==='a'?fitA(it):fitW(it)}
 function itemIcon(it){return it.slot==='a'?`<canvas width="9" height="8" data-a="${it.rar}" style="width:27px;height:24px;image-rendering:pixelated"></canvas>`:`<canvas width="7" height="13" data-w="${it.type}:${it.rar}" style="width:21px;height:39px;image-rendering:pixelated"></canvas>`}
 const BAGMAX=100;
 function itemRows(slot,sellOnly,opt){const eqId=slot==='a'?P.aeq:P.weq;const cur=P.bag.find(i=>i.uid===eqId),ca=cur?itemPow(cur):0,lab=slot==='a'?'방어':'공격';
- const list=P.bag.filter(i=>(i.slot||'w')===slot&&(!sellOnly||i.uid!==eqId)&&(!opt||opt.rar<0||i.rar===opt.rar));if(!list.length)return '<p class="muted">없음</p>';
- const so=opt&&opt.sort||'pow';return list.sort((a,b)=>(b.uid===eqId)-(a.uid===eqId)||(so==='rar'?b.rar-a.rar||itemPow(b)-itemPow(a):so==='lv'?b.lv-a.lv||itemPow(b)-itemPow(a):so==='new'?0:itemPow(b)-itemPow(a))).map(it=>{const eq=it.uid===eqId,wa=itemPow(it),diff=wa-ca,fit=itemFit(it);
-  return `<div class="row">${itemIcon(it)}<div class="f"><b style="color:${RAR[it.rar].col};text-shadow:0 0 1px #000">${esc(it.name)}${it.enh?` +${it.enh}`:''} <span class="tag">${RAR[it.rar].n}</span>${fit?' <span class="tag">적합</span>':''}</b><span class="muted">${lab} ${wa}${it.slot==='a'?` · HP +${aHp(it)}`:''}${fit?' (직업 적합 +25%)':''}${bnText(it)?' · '+bnText(it):''}${eq?'':` · <b style="color:${diff>0?'#4cc574':diff<0?'#e04646':'inherit'}">${diff>0?'▲':diff<0?'▼':''}${Math.abs(diff)}</b>`}</span></div>
+ const list=P.bag.filter(i=>(i.slot||'w')===slot&&(!sellOnly||!isEquipped(i))&&(!opt||opt.rar<0||i.rar===opt.rar));if(!list.length)return '<p class="muted">없음</p>';
+ const so=opt&&opt.sort||'pow';return list.sort((a,b)=>isEquipped(b)-isEquipped(a)||(a.part||'').localeCompare(b.part||'')||(so==='rar'?b.rar-a.rar||itemPow(b)-itemPow(a):so==='lv'?b.lv-a.lv||itemPow(b)-itemPow(a):so==='new'?0:itemPow(b)-itemPow(a))).map(it=>{const eq=isEquipped(it),wa=itemPow(it),cu=eqOf(it),diff=wa-(cu?itemPow(cu):0),fit=itemFit(it);
+  return `<div class="row">${itemIcon(it)}<div class="f"><b style="color:${RAR[it.rar].col};text-shadow:0 0 1px #000">${esc(it.name)}${it.enh?` +${it.enh}`:''} <span class="tag">${RAR[it.rar].n}</span>${partName(it)?` <span class="tag">${partName(it)}</span>`:''}${fit?' <span class="tag">적합</span>':''}</b><span class="muted">${lab} ${wa}${it.slot==='a'?` · HP +${aHp(it)}`:''}${fit?' (직업 적합 +25%)':''}${bnText(it)?' · '+bnText(it):''}${eq?'':` · <b style="color:${diff>0?'#4cc574':diff<0?'#e04646':'inherit'}">${diff>0?'▲':diff<0?'▼':''}${Math.abs(diff)}</b>`}</span></div>
   ${eq?'<span class="tag">장착 중</span>':`${sellOnly?'':`<button class="btn" data-weq="${it.uid}">장착</button>`}<button class="btn" data-wsell="${it.uid}">${wPrice(it).toLocaleString()}G</button>`}</div>`}).join('')}
 function lootRows(){const ks=Object.keys(P.loot).filter(k=>P.loot[k]);if(!ks.length)return '<p class="muted">몬스터를 잡으면 전리품을 떨어뜨립니다.</p>';const tot=ks.reduce((a,k)=>a+P.loot[k]*lootPrice(k),0);
  return ks.map(k=>`<div class="row"><div class="f"><b>📦 ${LOOT[k]} ×${P.loot[k]}</b><span class="muted">개당 ${lootPrice(k).toLocaleString()}G</span></div></div>`).join('')+`<button class="btn w" data-lsell="1" style="margin-top:6px">전리품 모두 판매 (${tot.toLocaleString()}G)</button>`}
 function bindItems(root,re){
- root.querySelectorAll('[data-weq]').forEach(b=>b.onclick=()=>{const it=P.bag.find(i=>i.uid===b.dataset.weq);if(!it)return;if(it.slot==='a')P.aeq=it.uid;else P.weq=it.uid;calc();P.hp=Math.min(P.hp,P.S.hp);toast(`⚔️ ${it.name} 장착`);netPresence(true);save(false);re()});
- root.querySelectorAll('[data-wsell]').forEach(b=>b.onclick=()=>{const it=P.bag.find(i=>i.uid===b.dataset.wsell);if(!it||it.uid===P.weq||it.uid===P.aeq)return;const sp_=Math.round(wPrice(it)*(1+.03*TV('sell')));const go=()=>{P.bag=P.bag.filter(i=>i!==it);P.gold+=sp_;toast(`💰 ${it.name} 판매 +${sp_.toLocaleString()}G`);save(false);re()};if(it.rar>=3)ask(`[${RAR[it.rar].n}] ${esc(it.name)}을(를) 팔까요?`,go,re);else go()});
+ root.querySelectorAll('[data-weq]').forEach(b=>b.onclick=()=>{const it=P.bag.find(i=>i.uid===b.dataset.weq);if(!it)return;equipItem(it);calc();P.hp=Math.min(P.hp,P.S.hp);toast(`⚔️ ${it.name} 장착`);netPresence(true);save(false);re()});
+ root.querySelectorAll('[data-wsell]').forEach(b=>b.onclick=()=>{const it=P.bag.find(i=>i.uid===b.dataset.wsell);if(!it||isEquipped(it))return;const sp_=Math.round(wPrice(it)*(1+.03*TV('sell')));const go=()=>{P.bag=P.bag.filter(i=>i!==it);P.gold+=sp_;toast(`💰 ${it.name} 판매 +${sp_.toLocaleString()}G`);save(false);re()};if(it.rar>=3)ask(`[${RAR[it.rar].n}] ${esc(it.name)}을(를) 팔까요?`,go,re);else go()});
  root.querySelectorAll('[data-lsell]').forEach(b=>b.onclick=()=>{let g=0;for(const k in P.loot){g+=P.loot[k]*lootPrice(k)}g=Math.round(g*(1+.03*TV('sell')));P.loot={};P.gold+=g;toast(`💰 전리품 판매 +${g.toLocaleString()}G`);save(false);re()});
 }
 let gearStock=[];
 function openGear(slot,tab){
  const bands=[1,10,20,35,50,65,80,95,120,160,220,300,400,500,600,700,800,900,1000,1300,1600,2000,2400,2800,3200,3600,4000].filter(b=>b<=P.lv+4);const use=bands.slice(-2);
  if(tab==='buy'){gearStock=[];use.forEach((b,i)=>{const rar=i===use.length-1&&use.length>1?1:0;const types=slot==='w'?Object.keys(WTYPE).filter(x=>x!=='stick'):['robe','leather','chain','plate'];
-  for(const ty of types)gearStock.push(slot==='w'?makeWeapon(ty,b,rar):makeArmor(ty,b,rar))});
+  for(const ty of types){gearStock.push(slot==='w'?makeWeapon(ty,b,rar):makeArmor(ty,b,rar));if(slot==='a'&&ty===ARCH_A[J().arch])for(const pt of ['h','l','f'])gearStock.push(makeArmor(ty,b,rar,pt))}});
   gearStock.sort((a,b)=>itemFit(b)-itemFit(a)||b.lv-a.lv)}
  const title=slot==='w'?'⚔️ 무기점':'🛡️ 방어구점';
  const body=tab==='buy'?gearStock.map((it,i)=>{const pr=wPrice(it)*4,fit=itemFit(it);return `<div class="row">${itemIcon(it)}<div class="f"><b style="color:${RAR[it.rar].col};text-shadow:0 0 1px #000">${esc(it.name)} <span class="tag">${RAR[it.rar].n}</span>${fit?' <span class="tag">적합</span>':''}</b><span class="muted">${slot==='a'?`방어 ${aDef(it)} · HP +${aHp(it)}`:`공격 ${wAtk(it)}`}${bnText(it)?' · '+bnText(it):''} · Lv ${it.lv}용</span></div><button class="btn ${fit&&P.gold>=pr?'pri':''}" data-gbuy="${i}" ${P.gold<pr||P.bag.length>=BAGMAX?'disabled':''}>${pr.toLocaleString()}G</button></div>`}).join('')
@@ -2297,7 +2307,7 @@ function openGear(slot,tab){
  ${tab==='buy'?'<p class="muted">레벨이 오르면 더 좋은 장비가 들어옵니다. 희귀 이상 장비는 몬스터에게서만 얻을 수 있어요.</p>':''}${body}`,
  root=>{root.querySelectorAll('[data-gt]').forEach(b=>b.onclick=()=>openGear(slot,b.dataset.gt));
   root.querySelectorAll('[data-gbuy]').forEach(b=>b.onclick=()=>{const it=gearStock[+b.dataset.gbuy];const pr=wPrice(it)*4;if(P.gold<pr||P.bag.length>=BAGMAX)return;P.gold-=pr;const nu={...it,bn:{...it.bn},uid:(slot==='a'?'a':'w')+(UIDC++)+Math.floor(Math.random()*1000)};P.bag.push(nu);
-   ask(`<b>${esc(it.name)}</b>을(를) 구매했습니다. 바로 장착할까요?`,()=>{if(slot==='a')P.aeq=nu.uid;else P.weq=nu.uid;calc();netPresence(true);save(false);toast(`장착: ${it.name}`);openGear(slot,'buy')},()=>{save(false);openGear(slot,'buy')})});
+   ask(`<b>${esc(it.name)}</b>을(를) 구매했습니다. 바로 장착할까요?`,()=>{equipItem(nu);calc();netPresence(true);save(false);toast(`장착: ${it.name}`);openGear(slot,'buy')},()=>{save(false);openGear(slot,'buy')})});
   bindItems(root,()=>openGear(slot,tab))});
 }
 function openShop(){
@@ -2493,7 +2503,7 @@ function startGame(c){
  P=c;claimSlot();setTimeout(elemCheck,3000);P.fx=1;P.fy=0;P.buffs=[];P.cd={};P.dead=false;P.task=null;P.shield=null;for(const k of ['acd','atkT','inv','lastHurt','undT','prayT','gateT','flash'])P[k]=0;P.st=Object.assign({kills:0,ores:0,uses:0,dragon:0,bosses:0,deaths:0},P.st);P.kc=P.kc||{};P.toilet=P.toilet||0;P.pray=P.pray||0;
  if(!JD[P.job]){P.job='none';P.hist=['none']}
  if(!P.loot)P.loot={};if(!P.bag)P.bag=[];if(!P.bag.some(i=>(i.slot||'w')==='w')){const st=makeWeapon('stick',1,0);st.enh=P.wpn||0;P.bag.unshift(st);P.weq=st.uid}if(!P.bag.find(i=>i.uid===P.weq&&(i.slot||'w')==='w'))P.weq=P.bag.find(i=>(i.slot||'w')==='w').uid;
- if(!P.bag.some(i=>i.slot==='a')){const ar=makeArmor('cloth',1,0);ar.enh=P.arm||0;P.bag.push(ar);P.aeq=ar.uid}if(!P.bag.find(i=>i.uid===P.aeq&&i.slot==='a'))P.aeq=P.bag.find(i=>i.slot==='a').uid;
+ if(!P.bag.some(i=>i.slot==='a')){const ar=makeArmor('cloth',1,0);ar.enh=P.arm||0;P.bag.push(ar);P.aeq=ar.uid}if(!P.bag.find(i=>i.uid===P.aeq&&i.slot==='a'))P.aeq=P.bag.find(i=>i.slot==='a'&&!i.part).uid;for(const pt of ['h','l','f']){const k=PART_K[pt];if(P[k]&&!P.bag.find(i=>i.uid===P[k]&&i.part===pt))P[k]=null}
  if(!P.wp){P.wp={village:1};for(const id in MAPS)if(MAPS[id].minLv<=P.lv&&P.lv>1)P.wp[id]=1}
  {let spent=0;for(const k in P.tree)spent+=P.tree[k];if(spent+(P.sp||0)<(P.lv-1)*3)P.sp=(P.lv-1)*3-spent}
  if(!P.skills){P.skills=['c0',...P.hist.filter(h=>h!=='none').map(h=>h+':0')];P.bar=P.skills.slice(0,5)}if(!P.bar)P.bar=P.skills.slice(0,5);
@@ -2842,10 +2852,11 @@ function elemAfter(m,d,o,E){if(E.base>=1.5)ftxt(m.x,m.y-16*m.sc-14,'효과적!',
  if(a==='fire'&&!o.burn)m.dot={dps:P.S.atk*.08,t:3,col:'#ff8a3a'};else if(a==='water')m.slow=Math.max(m.slow||0,2);
  else if(a==='wind'){const dx=m.x-P.x,dy=m.y-P.y,l=Math.hypot(dx,dy)||1;if(!m.boss&&!blocked(MAP,m.x+dx/l*8,m.y+dy/l*8,5)){m.x+=dx/l*8;m.y+=dy/l*8}}
  else if(a==='earth'&&!m.boss)m.stun=Math.max(m.stun||0,.5);else if(a==='light'||a==='dark')heal(Math.min(d*.03,P.S.hp*.02),true)}
-function elemResist(src){if(!src||!src.k)return 1;const e=monElem(src.k);if(e==='none')return 1;let k=1;const ar=P.bag.find(i=>i.uid===P.aeq);if(ar&&ar.el===e)k*=.8;if(P.elem===e)k*=.8;return k}
+function elemResist(src){if(!src||!src.k)return 1;const e=monElem(src.k);if(e==='none')return 1;let k=1;for(const a of armList()){const body=!a.part;if(a.el===e)k*=body?.8:.9;else if(a.el==='primal')k*=body?.9:.95}if(P.elem===e)k*=.8;return Math.max(.4,k)}
 // 속성 구슬 드롭 (0.1%, 스킬 트리 영향 없음)
-function orbDrop(m){const e=monElem(m.k);if(!ELEM6.includes(e)||Math.random()>=.001)return;P.orbs=P.orbs||{};P.orbs[e]=(P.orbs[e]||0)+1;sfx('rare');toast(`${ELEM[e].e} ${ELEM[e].n}의 구슬을 얻었다!`);addChat('',`${ELEM[e].e} ${P.nick}님이 ${ELEM[e].n}의 구슬을 얻었습니다!`,'sys')}
-function orbRows(){const o=P.orbs||{};const ks=ELEM6.filter(e=>o[e]);if(!ks.length)return '';return `<h3>속성 구슬</h3>`+ks.map(e=>`<div class="row"><div class="f"><b>${ELEM[e].e} ${ELEM[e].n}의 구슬 ×${o[e]}</b><span class="muted">마법 대장장이에게 가져가면 장비에 ${ELEM[e].n} 속성을 넣어 줘요</span></div></div>`).join('')}
+const ORB_KEYS=['fire','water','wind','earth','light','dark','primal'];
+function orbDrop(m){if(MAP&&MAP.uni===4&&Math.random()<.0001){P.orbs=P.orbs||{};P.orbs.primal=(P.orbs.primal||0)+1;sfx('rare');toast('🌈 태초의 구슬을 얻었다!!');addChat('',`🌈 ${P.nick}님이 태초의 구슬을 얻었습니다!!`,'sys')}const e=monElem(m.k);if(!ELEM6.includes(e)||Math.random()>=.001)return;P.orbs=P.orbs||{};P.orbs[e]=(P.orbs[e]||0)+1;sfx('rare');toast(`${ELEM[e].e} ${ELEM[e].n}의 구슬을 얻었다!`);addChat('',`${ELEM[e].e} ${P.nick}님이 ${ELEM[e].n}의 구슬을 얻었습니다!`,'sys')}
+function orbRows(){const o=P.orbs||{};const ks=ORB_KEYS.filter(e=>o[e]);if(!ks.length)return '';return `<h3>속성 구슬</h3>`+ks.map(e=>`<div class="row"><div class="f"><b>${ELEM[e].e} ${ELEM[e].n}의 구슬 ×${o[e]}</b><span class="muted">${e==='primal'?'무기: 모든 속성에 1.2배 · 방어구: 모든 속성 피해 감소':`마법 대장장이에게 가져가면 장비에 ${ELEM[e].n} 속성을 넣어 줘요`}</span></div></div>`).join('')}
 // 마법 계열 속성 선택 (영구)
 function elemCheck(){if(!P||P.elem)return;if(P.job==='ele'){P.elem='all';save(false);return}if(!MAGIC_LINE.includes(P.job))return;if(layerOpen||$('#dialog').classList.contains('on')){setTimeout(elemCheck,2500);return}chooseElem()}
 function chooseElem(){dialog('🔮 속성 선택',`마법의 길을 걷는 자는 <b>하나의 속성</b>과 계약해야 하네.<br>고른 속성의 스킬만 배울 수 있고, 그 속성 피해 <b>+20%</b>, 그 속성 공격을 받을 때 <b>-20%</b>.<br><b style="color:#ff7a3a">한 번 고르면 영원히 바꿀 수 없어.</b>`,ELEM6.map(e=>({t:`${ELEM[e].e} ${ELEM[e].n}`,f:()=>setTimeout(()=>ask(`<b>${ELEM[e].e} ${ELEM[e].n}</b> 속성과 계약할까요?<br><span class="muted">다시는 바꿀 수 없어요.</span>`,()=>{P.elem=e;save(true);sfx('fanfare');toast(`${ELEM[e].e} ${ELEM[e].n}의 마법사가 되었습니다! 스승에게서 ${ELEM[e].n} 스킬을 배울 수 있어요`)},()=>setTimeout(chooseElem,60)),60)})))}
@@ -2853,12 +2864,12 @@ function learnList(src){const own=Object.values(SKILLS).filter(s_=>s_.src===src)
  if((MAGIC_LINE.includes(src)||src==='ele')&&P.hist.includes(src)){const els=P.job==='ele'||P.elem==='all'?ELEM6:P.elem?[P.elem]:[];for(const e of els)own.push(...Object.values(SKILLS).filter(s_=>s_.src==='el_'+e))}
  return own.sort((a,b)=>a.lv-b.lv)}
 // 마법 대장장이 (장비에 속성 넣기)
-function msmithTalk(n){const items=P.bag.filter(i=>i.slot==='a'||(i.slot||'w')==='w').sort((a,b)=>(b.uid===P.weq||b.uid===P.aeq)-(a.uid===P.weq||a.uid===P.aeq)||b.rar-a.rar).slice(0,30);const o=P.orbs||{};
+function msmithTalk(n){const items=P.bag.filter(i=>i.slot==='a'||(i.slot||'w')==='w').sort((a,b)=>isEquipped(b)-isEquipped(a)||b.rar-a.rar).slice(0,40);const o=P.orbs||{};
  openLayer(`${head('🔮 마법 대장장이 일렉트라')}<p class="muted">속성 구슬 1개와 골드를 주면 장비에 속성을 깃들여 줄게. <b>무기</b>는 기본 공격이 그 속성이 되고, <b>갑옷</b>은 그 속성 피해를 20% 줄여 줘. 이미 속성이 있으면 새 속성으로 바뀌어.</p>
- <p>보유 구슬: ${ELEM6.map(e=>`${ELEM[e].e}${o[e]||0}`).join(' · ')}</p>
- ${items.map(it=>{const fee=Math.max(500,it.lv*200);return `<div class="row"><div class="f"><b>${it.uid===P.weq||it.uid===P.aeq?'[장착] ':''}${esc(it.name)}</b><span class="muted">${(it.slot||'w')==='w'?'무기':'갑옷'} · Lv ${it.lv} · 현재 속성 ${it.el?ELEM[it.el].e+' '+ELEM[it.el].n:'없음'} · 비용 ${fee.toLocaleString()}G</span></div><div style="display:flex;flex-wrap:wrap;gap:3px;max-width:130px">${ELEM6.map(e=>`<button class="btn" style="padding:3px 5px" data-ench="${it.uid}|${e}" ${o[e]&&P.gold>=fee&&it.el!==e?'':'disabled'}>${ELEM[e].e}</button>`).join('')}</div></div>`}).join('')||'<p class="muted">장비가 없습니다.</p>'}`,
+ <p>보유 구슬: ${ORB_KEYS.map(e=>`${ELEM[e].e}${o[e]||0}`).join(' · ')}</p><p class="muted">투구·레깅스·신발은 그 속성 피해를 10%, 갑옷은 20% 줄여요. 🌈 태초는 무기면 모든 속성에 1.2배, 방어구면 모든 속성 피해를 조금씩 줄여요.</p>
+ ${items.map(it=>{const fee=Math.max(500,it.lv*200);return `<div class="row"><div class="f"><b>${isEquipped(it)?'[장착] ':''}${esc(it.name)}</b><span class="muted">${(it.slot||'w')==='w'?'무기':partName(it)} · Lv ${it.lv} · 현재 속성 ${it.el?ELEM[it.el].e+' '+ELEM[it.el].n:'없음'} · 비용 ${fee.toLocaleString()}G</span></div><div style="display:flex;flex-wrap:wrap;gap:3px;max-width:130px">${ORB_KEYS.map(e=>`<button class="btn" style="padding:3px 5px" data-ench="${it.uid}|${e}" ${o[e]&&P.gold>=fee&&it.el!==e?'':'disabled'}>${ELEM[e].e}</button>`).join('')}</div></div>`}).join('')||'<p class="muted">장비가 없습니다.</p>'}`,
  root=>root.querySelectorAll('[data-ench]').forEach(b=>b.onclick=()=>{const [uid,e]=b.dataset.ench.split('|');const it=P.bag.find(i=>String(i.uid)===uid);if(!it)return;const fee=Math.max(500,it.lv*200);if(!(P.orbs&&P.orbs[e])||P.gold<fee)return;
-  P.orbs[e]--;P.gold-=fee;it.el=e;it.name=ELEM[e].e+' '+String(it.name).replace(/^(🔥|💧|🌪️|🪨|✨|🌑)\s/,'');sfx('fanfare');toast(`🔮 ${it.name}에 ${ELEM[e].n} 속성이 깃들었다!`);calc();save(true);msmithTalk(n)}))}
+  P.orbs[e]--;P.gold-=fee;it.el=e;it.name=ELEM[e].e+' '+String(it.name).replace(/^(🔥|💧|🌪️|🪨|✨|🌑|🌈)\s/,'');sfx('fanfare');toast(`🔮 ${it.name}에 ${ELEM[e].n} 속성이 깃들었다!`);calc();save(true);msmithTalk(n)}))}
 // 마법 상점 (1시간마다 진열 바뀜)
 const MSHOP_PRICE=100000;
 function mshopStock(){const h=Math.floor(Date.now()/3600000);let x=(h*2654435761)>>>0;const rnd=()=>{x^=x<<13;x>>>=0;x^=x>>>17;x^=x<<5;x>>>=0;return x/4294967296};const out=[];const pool=[...ELEM6];for(let i=0;i<3;i++){const k=Math.floor(rnd()*pool.length);out.push(pool.splice(k,1)[0])}return {h,items:out}}
