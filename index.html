@@ -2295,15 +2295,99 @@ function openDeath(){openLayer(`<h2>💀 쓰러졌습니다</h2><p>마을 사제
 /* ================= 타이틀 / 캐릭터 생성 ================= */
 function layerBusy(){return !!document.querySelector('#asky')}
 function openTitle(){
- onTitle=true;const used=SLOTS.filter(Boolean).length;
- openLayer(`<div class="logo">PIXEL QUEST<br>ONLINE</div><p class="center muted" style="margin-bottom:12px">평민에서 시작해 35개 직업의 스승을 찾아 떠나는 픽셀 RPG · 최대 Lv 1000</p>
- <h3>캐릭터 선택 <span class="muted">(${used}/${MAXSLOT})</span></h3>
- ${SLOTS.map((c,i)=>c?`<div class="row"><canvas width="16" height="16" data-job="${JD[c.job]?c.job:'none'}" style="width:40px;height:40px;image-rendering:pixelated"></canvas><div class="f"><b>${i+1}. ${esc(c.nick)}</b><span class="muted">Lv ${c.lv} ${JD[c.job]?JD[c.job][0]:''} · ${(c.gold||0).toLocaleString()}G${c.savedAt?' · '+new Date(c.savedAt).toLocaleDateString()+' '+new Date(c.savedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):''}</span></div><button class="btn" data-del="${i}" aria-label="삭제">🗑️</button><button class="btn pri" data-play="${i}">플레이</button></div>`
-  :`<div class="row"><div class="f"><b class="muted">${i+1}. 빈 슬롯</b></div><button class="btn" data-new="${i}">+ 새 캐릭터</button></div>`).join('')}`,
- root=>{root.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>{const i=+b.dataset.play;const c=JSON.parse(JSON.stringify(SLOTS[i]));c.slot=i;closeLayer();startGame(c)});
-  root.querySelectorAll('[data-new]').forEach(b=>b.onclick=()=>openCreate(+b.dataset.new));
+ onTitle=true;const used=SLOTS.filter(Boolean).length,free=SLOTS.findIndex(x=>!x);
+ openLayer(`<div class="logo">PIXEL QUEST<br>ONLINE</div><p class="center muted" style="margin-bottom:16px">평범한 하루가 끝나던 날, 모험이 시작되었다.</p>
+ <button class="btn pri w" id="tnew" style="padding:16px;font-size:16px" ${free<0?'disabled':''}>✨ 새 캐릭터 만들기</button>${free<0?'<p class="muted center">캐릭터 칸이 가득 찼어요. 아래에서 하나를 지워 주세요.</p>':''}
+ ${used?`<h3 style="margin-top:18px">이어서 하기 <span class="muted">(${used}/${MAXSLOT})</span></h3>`+SLOTS.map((c,i)=>c?`<div class="row"><canvas width="16" height="16" data-job="${JD[c.job]?c.job:'none'}" style="width:40px;height:40px;image-rendering:pixelated"></canvas><div class="f"><b>${esc(c.nick)}</b><span class="muted">Lv ${c.lv} ${JD[c.job]?JD[c.job][0]:''} · ${(c.gold||0).toLocaleString()}G</span></div><button class="btn" data-del="${i}" aria-label="삭제">🗑️</button><button class="btn pri" data-play="${i}">플레이</button></div>`:'').join(''):''}`,
+ root=>{const tn=root.querySelector('#tnew');if(tn)tn.onclick=()=>openIntroName(free);
+  root.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>{const i=+b.dataset.play;const c=JSON.parse(JSON.stringify(SLOTS[i]));c.slot=i;closeLayer();startGame(c)});
   root.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const i=+b.dataset.del,c=SLOTS[i];ask(`<b>${esc(c.nick)}</b> (Lv ${c.lv}) 캐릭터를 삭제할까요?<br><span class="muted">삭제하면 되돌릴 수 없습니다.</span>`,()=>{deleteSlot(i);toast('🗑️ 캐릭터를 삭제했습니다');openTitle()},openTitle)})});
 }
+/* ===== 새 캐릭터: 검은 화면 이름 입력 + 오프닝 컷신 ===== */
+function blackOverlay(id){let ov=document.getElementById(id);if(ov)ov.remove();ov=document.createElement('div');ov.id=id;ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;opacity:0;transition:opacity .7s;color:#e8e8f0;font-family:inherit;user-select:none';document.body.appendChild(ov);requestAnimationFrame(()=>ov.style.opacity='1');return ov}
+function openIntroName(slot){if(slot==null||slot<0){toast('캐릭터 칸이 가득 찼습니다');return}closeLayer();onTitle=false;audio();
+ const ov=blackOverlay('introname');
+ ov.innerHTML=`<div style="color:#8a8a9a;font-size:13px;letter-spacing:2px">— ${slot+1}번째 이야기 —</div><div style="font-size:18px;font-weight:700;color:#fff">당신의 이름은?</div>
+ <input id="inick" maxlength="10" autocomplete="off" placeholder="이름 (최대 10자)" style="width:min(80vw,280px);padding:12px;font:inherit;font-size:16px;text-align:center;background:#0d0d12;color:#fff;border:2px solid #3a3a4a;outline:none">
+ <button class="btn pri" id="iok" style="min-width:160px">확인</button><button class="btn" id="iback" style="opacity:.6">← 돌아가기</button>`;
+ const inp=ov.querySelector('#inick');setTimeout(()=>inp.focus(),300);
+ const go=()=>{const n=(inp.value||'').trim().slice(0,10);if(!n){inp.style.borderColor='#c84040';toast('이름을 입력하세요');return}if(SLOTS.some(c=>c&&c.nick===n)){toast('이미 같은 이름의 캐릭터가 있습니다');return}
+  ov.style.opacity='0';setTimeout(()=>{ov.remove();playIntro(n,()=>{const c=newChar(n);c.slot=slot;c.story={c0:true};startGame(c);addChat('',`📢 ${n}님, 에르덴 마을에 오신 것을 환영합니다! 먼저 마을 이장(❗)에게 말을 걸어보세요.`,'sys')})},700)};
+ ov.querySelector('#iok').onclick=go;inp.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+ ov.querySelector('#iback').onclick=()=>{ov.remove();openTitle()};
+}
+function introSfx(k){if(!SFX.on||SFX.vol<=0||!SFX.ctx||SFX.ctx.state!=='running')return;try{
+ if(k==='step')tn(90,.05,'triangle',.05,.6);
+ if(k==='horn'){tn(370,.5,'sawtooth',.06);tn(466,.5,'sawtooth',.05)}
+ if(k==='brake'){tn(1400,.7,'sawtooth',.05,.55);nz(.7,.06,0,3000)}
+ if(k==='crash'){nz(.6,.22,0,200,'lowpass');tn(70,.5,'square',.15,.4);nz(.3,.12,.05,2500)}
+ if(k==='heart'){tn(55,.12,'sine',.25,.7);tn(50,.14,'sine',.2,.7,.22)}
+ if(k==='bird'){tn(2400,.06,'sine',.04,1.3);tn(2800,.06,'sine',.04,1.2,.1)}
+ if(k==='blip')tn(880,.02,'square',.025)}catch(e){}}
+function playIntro(name,done){
+ const ov=blackOverlay('intro');ov.style.gap='0';ov.style.padding='0';
+ ov.innerHTML=`<canvas width="160" height="90" style="width:min(100vw,177.7vh);height:auto;max-height:100vh;image-rendering:pixelated;display:block"></canvas>
+ <div id="icap" style="position:absolute;top:12%;left:0;right:0;text-align:center;font-size:15px;color:#fff;text-shadow:0 2px 4px #000;opacity:0;transition:opacity .5s;padding:0 16px"></div>
+ <div id="ibig" style="position:absolute;top:38%;left:0;right:0;text-align:center;font-size:44px;font-weight:900;color:#fff;text-shadow:0 0 12px #f00,0 3px 0 #000;opacity:0;transition:opacity .15s"></div>
+ <div id="idlg" style="position:absolute;left:4%;right:4%;bottom:5%;background:rgba(10,8,6,.88);border:2px solid #8a6a3a;padding:12px 14px 16px;min-height:86px;display:none;cursor:pointer"><div id="iname" style="color:#ffd84a;font-weight:700;margin-bottom:4px"></div><div id="itext" style="color:#f0e8d8;line-height:1.6;font-size:15px;white-space:pre-line"></div><div style="position:absolute;right:10px;bottom:4px;color:#8a6a3a;font-size:11px">▼ 터치</div></div>
+ <button class="btn" id="iskip" style="position:absolute;top:12px;right:12px;opacity:.75">건너뛰기 ▶▶</button>`;
+ const cv=ov.querySelector('canvas'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;const cap=ov.querySelector('#icap'),big=ov.querySelector('#ibig'),dlg=ov.querySelector('#idlg');
+ const px=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))};
+ const r=rng(2024);const bld=[];for(let x=0;x<160;){const w=12+Math.floor(r()*16),h=16+Math.floor(r()*22);const win=[];for(let wy=40-h+3;wy<37;wy+=4)for(let wx=x+2;wx<x+w-2;wx+=3)if(r()<.45)win.push([wx,wy]);bld.push({x,w,h,col:['#141a30','#1a2038','#10162a'][Math.floor(r()*3)],win});x+=w}
+ const stars=[...Array(25)].map(()=>[r()*160,r()*20]);
+ // 사람 (뒷모습 / 쓰러짐 / 침대 / 앉음)
+ const person=(x,y,mode,f)=>{const H='#2a1e16',S='#f0c8a0',T='#c8ccd8',L='#2a3a5a';
+  if(mode==='back'){px(x-2,y-12,5,4,H);px(x-3,y-8,7,6,T);px(x-3,y-8,1,5,'#a8acb8');px(x+3,y-8,1,5,'#a8acb8');px(x-2,y-7,1,4,'#4a3a2a');const a=f%2;px(x-2,y-2,2,a?3:2,L);px(x+1,y-2,2,a?2:3,L);px(x-2,y+(a?1:0),2,1,'#1a1a1a');px(x+1,y+(a?0:1),2,1,'#1a1a1a')}
+  else if(mode==='look'){px(x-2,y-12,5,4,H);px(x+1,y-10,2,2,S);px(x-3,y-8,7,6,T);px(x-2,y-2,2,3,L);px(x+1,y-2,2,3,L)}
+  else if(mode==='lie'){px(x,y-3,4,4,S);px(x-1,y-3,2,4,H);px(x+4,y-3,7,4,T);px(x+11,y-2,6,3,L);px(x+17,y-2,2,3,'#1a1a1a')}
+  else if(mode==='bed'){px(x,y,4,3,S);px(x-1,y-1,6,2,H)}
+  else if(mode==='sit'){px(x-2,y-12,5,3,H);px(x-2,y-9,5,3,S);px(x-1,y-8,1,1,'#2a1a1a');px(x+1,y-8,1,1,'#2a1a1a');px(x-3,y-6,7,6,'#e8e0d0')}};
+ const truck=(x,y)=>{px(x,y,40,14,'#c8c4b8');px(x,y+12,40,2,'#8a8678');px(x-10,y+4,11,10,'#3a5a9a');px(x-9,y+5,6,4,'#9ac8e8');px(x-11,y+10,2,2,'#ffe89a');for(const wx of[x-6,x+8,x+30])px(wx,y+13,6,4,'#141414')};
+ const street=(t,shake)=>{const sx=shake?(Math.random()-.5)*4:0,sy=shake?(Math.random()-.5)*3:0;c.save();c.translate(sx,sy);
+  for(let y=0;y<40;y++)px(0,y,160,1,y<15?'#0b1028':y<28?'#121a38':'#1a2448');for(const[a,b]of stars)px(a,b,1,1,'#c8d0ff');
+  for(const b of bld){px(b.x,40-b.h,b.w,b.h,b.col);for(const[wx,wy]of b.win)px(wx,wy,1,2,'#ffd870')}
+  px(0,40,160,7,'#5a5a66');px(0,46,160,1,'#3a3a44');px(0,47,160,33,'#26262e');for(let x=0;x<160;x+=12)if(x<62||x>98)px(x,63,6,1,'#c8b040');
+  for(let y=49;y<78;y+=5)px(64,y,32,3,'#cfcfcf');px(0,80,160,10,'#5a5a66');px(0,80,160,1,'#3a3a44');
+  px(104,22,2,20,'#3a3a3a');px(101,22,8,8,'#1a1a1a');const green=t<3.4||Math.floor(t*4)%2;px(103,24,4,4,green?'#3aff7a':'#0a3a1a');
+  px(24,14,2,28,'#3a3a3a');px(20,13,8,2,'#3a3a3a');c.fillStyle='rgba(255,220,140,.08)';c.beginPath();c.moveTo(18,15);c.lineTo(30,15);c.lineTo(40,80);c.lineTo(8,80);c.fill();
+  // 사람
+  if(t<4)person(80,Math.max(66,90-(t-.6)*7),t>3.45?'look':'back',Math.floor(t*4));else person(54,73,'lie',0);
+  // 트럭
+  if(t>2.6){const k=Math.min(1,(t-3.1)/.9),x=t<3.1?175:175-(175-88)*k*k;c.fillStyle=`rgba(255,240,180,${Math.min(.35,(t-2.6)*.4)})`;c.beginPath();c.moveTo(x-10,61);c.lineTo(x-80,48);c.lineTo(x-80,78);c.fill();truck(t<4?x:88,52);if(t>4)for(let i=0;i<20;i++)px(92+i*3,66,2,1,'#141414')}
+  c.restore()};
+ const house=(t)=>{px(0,0,160,90,'#5a3e26');for(let y=0;y<66;y+=6)px(0,y,160,1,'#3e2a18');for(let x=0;x<160;x+=22)px(x,0,1,66,'#4a3220');px(0,66,160,24,'#3a2818');for(let x=0;x<160;x+=10)px(x,66,1,24,'#2a1c10');
+  px(96,16,30,28,'#2a1a0e');px(98,18,26,24,'#bfe4ff');px(110,18,2,24,'#2a1a0e');px(98,29,26,2,'#2a1a0e');c.fillStyle='rgba(255,240,190,.13)';c.beginPath();c.moveTo(98,42);c.lineTo(124,42);c.lineTo(96,90);c.lineTo(56,90);c.fill();
+  for(let i=0;i<8;i++){const a=(t*.3+i*.13)%1;px(70+i*5+Math.sin(t+i)*3,40+a*44,1,1,'rgba(255,250,220,.6)')}
+  px(6,20,30,3,'#3e2a18');px(8,13,4,7,'#8a3a3a');px(13,14,3,6,'#3a6a8a');px(17,12,4,8,'#6a8a3a');px(23,15,5,5,'#c8a060');
+  px(18,52,46,14,'#6a4a2a');px(18,48,4,18,'#4a3018');px(60,50,4,16,'#4a3018');px(22,50,12,6,'#f0ece0');
+  const sit=t>11.6;px(sit?40:34,54,26,8,'#4a6ab0');px(sit?40:34,54,26,2,'#5a7ac8');if(sit)person(31,57,'sit',0);else person(26,51,'bed',0);
+  px(72,58,14,2,'#6a4a2a');px(74,60,2,6,'#4a3018');px(82,60,2,6,'#4a3018');px(78,53,2,5,'#f0ece0');const fl=Math.sin(t*14)>0;px(78,fl?50:51,2,3,fl?'#ffd84a':'#ff9a2a');c.fillStyle='rgba(255,200,100,.08)';c.beginPath();c.arc(79,51,9,0,6.3);c.fill()};
+ let t0=performance.now(),dead=false,mode='street',fired={},cutIdx=-1,shake=0,houseT0=0;
+ const capOn=(txt)=>{cap.textContent=txt;cap.style.opacity=txt?'1':'0'};
+ const once=(k,f)=>{if(!fired[k]){fired[k]=1;f()}};
+ const lines=[['', '……'],[name,'……으윽. 머리야……'],[name,'분명히 횡단보도를 건너고 있었는데…… 신호도 초록불이었고……'],[name,'그래, 트럭…… 트럭이 갑자기……!'],['','낯선 나무 천장. 삐걱이는 침대. 창문 너머로 들려오는 종소리.'],[name,'여기는…… 내 집? 아니, 이런 집에 살았던 기억은 없는데.'],[name,'……꿈, 인가?']];
+ let li=-1,typing=null,shown='';
+ const nextLine=()=>{if(typing){clearInterval(typing);typing=null;ov.querySelector('#itext').textContent=lines[li][1];return}li++;if(li>=lines.length){finish();return}const[n,tx]=lines[li];ov.querySelector('#iname').textContent=n;const el=ov.querySelector('#itext');el.textContent='';let k=0;typing=setInterval(()=>{k++;el.textContent=tx.slice(0,k);if(k%2)introSfx('blip');if(k>=tx.length){clearInterval(typing);typing=null}},40)};
+ const finish=()=>{if(dead)return;dead=true;clearInterval(typing);ov.style.opacity='0';setTimeout(()=>{ov.remove();done()},800)};
+ dlg.onclick=nextLine;ov.querySelector('#iskip').onclick=finish;
+ const kd=e=>{if(dead){document.removeEventListener('keydown',kd,true);return}if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();if(dlg.style.display!=='none')nextLine()}else if(e.key==='Escape'){e.stopPropagation();finish()}};document.addEventListener('keydown',kd,true);
+ const loop=()=>{if(dead)return;const t=(performance.now()-t0)/1000;
+  if(t<8){street(t,t>4&&t<4.6);
+   if(t<.6)capOn('');else if(t<2.4)capOn('그날도 평범한 하루였다.');else if(t<3.4)capOn('퇴근길, 늘 건너던 횡단보도.');else capOn('');
+   if(t>.8&&t<3.4&&Math.floor(t*4)!==shake){shake=Math.floor(t*4);introSfx('step')}
+   if(t>3.0)once('horn',()=>introSfx('horn'));if(t>3.4)once('brake',()=>introSfx('brake'));
+   if(t>3.45&&t<4){big.style.fontSize='32px';big.textContent='!';big.style.opacity='1'}
+   if(t>=4)once('crash',()=>{introSfx('crash');big.style.fontSize='48px';big.textContent='쾅—!';big.style.opacity='1';setTimeout(()=>big.style.opacity='0',900)});
+   if(t>=4&&t<4.25){c.fillStyle=`rgba(255,255,255,${1-(t-4)/.25})`;c.fillRect(0,0,160,90)}
+   if(t>4.3){const k=Math.min(1,(t-4.3)/2.7);c.fillStyle=`rgba(120,0,0,${.25+.15*Math.sin(t*6)})`;c.fillRect(0,0,160,90);c.fillStyle=`rgba(0,0,0,${k})`;c.fillRect(0,0,160,90)}
+   if(t>5.2&&t<7.6){capOn('……');for(const k of[5.3,6.3,7.2])if(t>k)once('hb'+k,()=>introSfx('heart'))}
+  }else if(t<9){px(0,0,160,90,'#000');capOn('')}
+  else{house(t);if(t<10.2){c.fillStyle=`rgba(0,0,0,${1-(t-9)/1.2})`;c.fillRect(0,0,160,90)}if(t>9.5)once('bird',()=>introSfx('bird'));
+   if(t>12.3&&dlg.style.display==='none'){dlg.style.display='block';nextLine()}}
+  requestAnimationFrame(loop)};
+ requestAnimationFrame(loop);
+}
+
 function openCreate(slot){
  onTitle=false;if(slot==null)slot=SLOTS.findIndex(x=>!x);if(slot<0){toast('슬롯이 가득 찼습니다');openTitle();return}
  openLayer(`<h2><span>캐릭터 만들기 · ${slot+1}번 슬롯</span><button class="x" id="cback" aria-label="뒤로">✕</button></h2><div class="row"><canvas width="16" height="16" data-job="none" style="width:56px;height:56px;image-rendering:pixelated"></canvas><div class="f"><b>평민으로 시작합니다</b><span class="muted">에르덴 마을에서 깨어난 당신. 마을 이장의 부탁을 들어주며 실력을 쌓고, 원하는 직업의 스승을 찾아가세요. 숨겨진 스승 5명은 사냥터와 성당, 특별한 장소에 있습니다.</span></div></div>
