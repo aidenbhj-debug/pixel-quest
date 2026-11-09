@@ -2864,7 +2864,7 @@ function learnList(src){const own=Object.values(SKILLS).filter(s_=>s_.src===src)
  if((MAGIC_LINE.includes(src)||src==='ele')&&P.hist.includes(src)){const els=P.job==='ele'||P.elem==='all'?ELEM6:P.elem?[P.elem]:[];for(const e of els)own.push(...Object.values(SKILLS).filter(s_=>s_.src==='el_'+e))}
  return own.sort((a,b)=>a.lv-b.lv)}
 // 마법 대장장이 (장비에 속성 넣기)
-const FUSE_FEE=500000;
+const FUSE_FEE=50000000;
 function msmithTalk(n){const items=P.bag.filter(i=>i.slot==='a'||(i.slot||'w')==='w').sort((a,b)=>isEquipped(b)-isEquipped(a)||b.rar-a.rar).slice(0,40);const o=P.orbs||{};
  openLayer(`${head('🔮 마법 대장장이 일렉트라')}<p class="muted">속성 구슬 1개와 골드를 주면 장비에 속성을 깃들여 줄게. <b>무기</b>는 기본 공격이 그 속성이 되고, <b>갑옷</b>은 그 속성 피해를 20% 줄여 줘. 이미 속성이 있으면 새 속성으로 바뀌어.</p>
  <p>보유 구슬: ${ORB_KEYS.map(e=>`${ELEM[e].e}${o[e]||0}`).join(' · ')}</p>${(()=>{const ok=ELEM6.every(e=>o[e]>0)&&P.gold>=FUSE_FEE;return `<div class="row"><div class="f"><b>🌈 태초의 구슬 합성</b><span class="muted">🔥💧🌪️🪨✨🌑 구슬 각 1개 + ${FUSE_FEE.toLocaleString()}G</span></div><button class="btn ${ok?'pri':''}" id="fuse" ${ok?'':'disabled'}>합성</button></div>`})()}<p class="muted">투구·레깅스·신발은 그 속성 피해를 10%, 갑옷은 20% 줄여요. 🌈 태초는 무기면 모든 속성에 1.2배, 방어구면 모든 속성 피해를 조금씩 줄여요.</p>
