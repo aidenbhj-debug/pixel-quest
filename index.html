@@ -246,7 +246,7 @@ const BASEPAL={
 };
 /* 직업: id:[이름, 전투형, 외형, 단계, [다음 직업], 팔레트 덮어쓰기, 스킬, 히든조건] */
 const JD={
- gog:['신 중의 신','magic','angel',5,[],{k:'#000000',Y:'#ffd84a',H:'#101018',s:'#f0e0d0',e:'#ff2a2a',W:'#14141e',w:'#ffd84a',R:'#1e1608',r:'#ffd84a'},['창세의 빛','genesis',25,25,80,{r:440}],1],
+ gog:['태초의 신','magic','angel',5,[],{k:'#000000',Y:'#ffd84a',H:'#101018',s:'#f0e0d0',e:'#ff2a2a',W:'#14141e',w:'#ffd84a',R:'#1e1608',r:'#ffd84a'},['창세의 빛','genesis',25,25,80,{r:440}],1],
  atn:['속죄된 자','holy','demon',3,['god'],{k:'#2a2010',H:'#ffe070',B:'#f4f4fa',s:'#f2dccb',e:'#6fd3ff',M:'#b07080',C:'#f4f0e4',A:'#d8d0c0',a:'#9a9282',G:'#6fd3ff',T:'#d8d0c0'},['속죄의 불꽃','meteor',2,8,26,{r:44,burn:1,n:2}]],
  god:['신','magic','angel',4,['gog'],{k:'#5a4a10',Y:'#ffffff',H:'#fff6c0',s:'#ffeedd',e:'#ffb000',W:'#ffffff',w:'#ffe070',R:'#ffffff',r:'#ffe8a0'},['천지창조','creation',10,20,60,{r:340}],1],
  none:['평민','commoner','worker',1,[],{A:'#a8784a',a:'#7a5230',O:'#8a8f99',o:'#6d7680',T:'#e8e0d0',P:'#8a5a2b'},['주먹 연타','slash',1.5,3,4,{}]],
@@ -419,7 +419,7 @@ const MD={
  valkyrie:['발키리','angel',{k:'#1a1408',Y:'#ffd84a',H:'#ffe8a0',s:'#f2d0b0',e:'#3a6ac8',W:'#ffffff',w:'#d8e0f0',R:'#c8d0e0',r:'#9aa8c0'},850,1.2,1.4,1.3,46],
  titanGuard:['거신 수호병','orc',{k:'#1a1408',O:'#d0a030',o:'#8a6a20',e:'#ffffff',T:'#fff8e0',A:'#fff8e0',X:'#ffd84a'},900,1.7,1.25,1.9,26],
  fallenGod:['타락한 신','demon',{k:'#000000',H:'#ffffff',B:'#ffd84a',s:'#e8d0b0',e:'#ff2a2a',M:'#5a1a0a',C:'#8a6a10',A:'#3a2a10',a:'#1a1408',G:'#ff2a2a',T:'#8a6a10'},1000,11,1.6,2,30,0,1],
- godOfGods:['신 중의 신','angel',{k:'#000000',Y:'#ffffff',H:'#0a0a12',s:'#fff0e0',e:'#ff2a2a',W:'#0a0a14',w:'#ffd84a',R:'#14100a',r:'#ffd84a'},5000,12,1.6,2.5,36,0,1],
+ godOfGods:['태초의 신','angel',{k:'#000000',Y:'#ffffff',H:'#0a0a12',s:'#fff0e0',e:'#ff2a2a',W:'#0a0a14',w:'#ffd84a',R:'#14100a',r:'#ffd84a'},5000,12,1.6,2.5,36,0,1],
  endDragon:['종언의 흑룡','dragon',{k:'#000000',R:'#1a0a14',Y:'#5a0a1a',e:'#ff2a2a',w:'#3a0010',T:'#ff2a2a'},3000,14,1.7,2.2,30,1,1],
  bat:['흡혈 박쥐','bat',{k:'#140c1a',B:'#5a3f6e',w:'#7b5a92',e:'#ff4040',t:'#ffffff'},9,.8,1,.7,46],
  skeleton:['해골 병사','skeleton',{k:'#1a1410',W:'#e8e4d8',w:'#b5b0a0',e:'#1a1410',S:'#9aa3ab'},12,1,1.1,1.2,30],
@@ -572,7 +572,7 @@ const ARCH_W={sword:['sword'],spear:['spear'],tank:['hammer','sword'],brute:['ax
 const HAND={knight:[12,9],mage:[12,8],archer:[12,8],rogue:[12,11],priest:[12,8],worker:[11,10],beast:[12,10],dino:[9,9],mermaid:[12,7],spirit:[12,8],angel:[11,10],demon:[9,11]};
 const WKEYS={knight:['W','G'],mage:['S','O'],archer:['b','w'],rogue:['D'],priest:['G','S'],worker:['P','S'],mermaid:['X']};
 const MON_W={goblin:'dagger',goblinKing:'axe',gshaman:'wand',skeleton:'sword',orc:'axe',golem:'hammer',golemKing:'hammer',lizard:'spear',darkKnight:'sword',lich:'staff',troll:'hammer',titan:'hammer',frostGiant:'hammer',yeti:'axe',demon:'staff',demonKing:'sword',dknight:'spear',ifrit:'wand',fireImp:'wand',hydra:'bow',wolfKing:'bow',kingSlime:'staff',dragon:'sword'};
-const LOOT={slime:'슬라임 젤리',wolf:'늑대 가죽',goblin:'고블린 귀',kingSlime:'왕관 젤리',gshaman:'주술 깃털',warg:'워그 송곳니',goblinKing:'대장의 왕관',bat:'박쥐 날개',skeleton:'낡은 뼈',golem:'골렘 핵',golemKing:'거대 골렘 핵',bogSlime:'늪 진흙',lizard:'도마뱀 비늘',mosquito:'독침',hydra:'히드라 머리',orc:'오크 송곳니',ghost:'영혼 조각',wolfKing:'펜리르의 털',darkKnight:'암흑 파편',lich:'리치의 성물함',iceWolf:'얼음 결정',yeti:'예티 털',frostGolem:'서리 핵',frostGiant:'거인의 심장',troll:'트롤 피',wyvern:'와이번 비늘',titan:'타이탄 파편',gargoyle:'석상 조각',demon:'악마의 뿔',demonKing:'마왕의 왕관',magma:'용암석',fireImp:'불씨',salamander:'화염 꼬리',ifrit:'이프리트의 불꽃',dknight:'용기사의 문장',drake:'드레이크 비늘',dragon:'용의 심장',endDragon:'종언의 비늘',godOfGods:'신 중의 신의 왕관',harpy:'하피 깃털',stormElem:'폭풍의 정수',skyKnight:'천공 문장',seraph:'세라핌의 날개',voidHorror:'공허의 눈',shadowFiend:'그림자 정수',abyssWyrm:'심연룡 비늘',abyssLord:'심연의 왕관',chaosGolem:'혼돈 핵',mirrorKnight:'거울 파편',chaosSpirit:'혼돈의 정수',chaosTitan:'거신의 심장',godSoldier:'신병의 문장',valkyrie:'발키리의 창끝',titanGuard:'황금 파편',fallenGod:'신의 파편'};
+const LOOT={slime:'슬라임 젤리',wolf:'늑대 가죽',goblin:'고블린 귀',kingSlime:'왕관 젤리',gshaman:'주술 깃털',warg:'워그 송곳니',goblinKing:'대장의 왕관',bat:'박쥐 날개',skeleton:'낡은 뼈',golem:'골렘 핵',golemKing:'거대 골렘 핵',bogSlime:'늪 진흙',lizard:'도마뱀 비늘',mosquito:'독침',hydra:'히드라 머리',orc:'오크 송곳니',ghost:'영혼 조각',wolfKing:'펜리르의 털',darkKnight:'암흑 파편',lich:'리치의 성물함',iceWolf:'얼음 결정',yeti:'예티 털',frostGolem:'서리 핵',frostGiant:'거인의 심장',troll:'트롤 피',wyvern:'와이번 비늘',titan:'타이탄 파편',gargoyle:'석상 조각',demon:'악마의 뿔',demonKing:'마왕의 왕관',magma:'용암석',fireImp:'불씨',salamander:'화염 꼬리',ifrit:'이프리트의 불꽃',dknight:'용기사의 문장',drake:'드레이크 비늘',dragon:'용의 심장',endDragon:'종언의 비늘',godOfGods:'태초의 신의 왕관',harpy:'하피 깃털',stormElem:'폭풍의 정수',skyKnight:'천공 문장',seraph:'세라핌의 날개',voidHorror:'공허의 눈',shadowFiend:'그림자 정수',abyssWyrm:'심연룡 비늘',abyssLord:'심연의 왕관',chaosGolem:'혼돈 핵',mirrorKnight:'거울 파편',chaosSpirit:'혼돈의 정수',chaosTitan:'거신의 심장',godSoldier:'신병의 문장',valkyrie:'발키리의 창끝',titanGuard:'황금 파편',fallenGod:'신의 파편'};
 function wMaterial(lv){return lv<10?'나무':lv<25?'철':lv<45?'강철':lv<65?'은빛':lv<85?'미스릴':lv<150?'용골':lv<350?'천공석':lv<600?'심연':lv<800?'혼돈':lv<1500?'신성':lv<2500?'차원':lv<3500?'성운':'태초'}
 let UIDC=Date.now()%100000;
 function makeWeapon(type,lv,rar){
@@ -1083,7 +1083,7 @@ const RAIDS=[
  {id:'raid4',name:'최상급 레이드 · 혼돈의 왕좌',short:'최상급',lv:1000,theme:'chaos',mobs:['chaosGolem','mirrorKnight','chaosSpirit','godSoldier','valkyrie'],mlv:[1200,1400],waves:[18,22,26],boss:[['chaosTitan',1500],['fallenGod',1450]],gold:2000000,expMul:3,items:[[5,1000],[4,1000],[4,1000]],time:360,col:'#ff4ab0',desc:'신들의 전장보다 훨씬 강함 · 보스 2마리'},
  {id:'raid5',name:'종급 레이드 · 종언',short:'종급',lv:1000,req:'raid4',theme:'castle',tint:'rgba(140,0,0,.2)',mobs:['abyssWyrm','mirrorKnight','chaosTitan','fallenGod'],mlv:[2200,2600],waves:[20,24,30],boss:[['endDragon',3000],['abyssLord',2800],['seraph',2800]],gold:10000000,expMul:5,items:[[5,1000],[5,1000],[5,1000]],time:420,col:'#ff2a2a',desc:'가장 어려운 레이드 · Lv 1000으로도 클리어가 거의 불가능'}
 ];
-RAIDS.push({id:'gogarena',name:'신 중의 신의 영역',short:'시련',lv:80,hidden:1,theme:'divine',tint:'rgba(0,0,0,.35)',mobs:[],mlv:[1,1],waves:[],boss:[['godOfGods',5000]],gold:0,expMul:0,items:[],time:600,col:'#ffd84a',desc:''});
+RAIDS.push({id:'gogarena',name:'태초의 신의 영역',short:'시련',lv:80,hidden:1,theme:'divine',tint:'rgba(0,0,0,.35)',mobs:[],mlv:[1,1],waves:[],boss:[['godOfGods',5000]],gold:0,expMul:0,items:[],time:600,col:'#ffd84a',desc:''});
 const RAID_BACK={x:57.5*TS,y:10.4*TS};const RAID_HARD=2;
 function startRaid(d,seed,n){seed=seed||Math.floor(Math.random()*1e9);n=Math.max(1,n||1);W.raid={def:d,wave:0,t0:now(),nextAt:now()+2.5,over:false,seed,n,key:d.id+':'+seed,my:{},seen:{},pend:{}};if(ROOM)ROOM.presence({rd:{k:W.raid.key,d:{}}}).catch(()=>{});changeMap(d.id,20.5*TS,28*TS);$('#raidbar').hidden=false;toast(`⚔️ ${d.name} 시작!${n>1?` (파티 ${n}명 · 몬스터 ×${n})`:''} 2초 뒤 첫 웨이브`)}
 function raidSpawnWave(){const R_=W.raid,d=R_.def;R_.wave++;const n=d.waves.length,rr=rng(R_.seed+R_.wave*7919),pk=a=>a[Math.floor(rr()*a.length)];
@@ -1098,7 +1098,7 @@ function raidTick(){const R_=W.raid;if(!R_||R_.over||!MAP.raid||!P||P.dead)retur
 function raidReward(rar,lv){const a=ARCH_W[J().arch]||['sword'];const wt=a.filter(x=>x!=='stick');const it=Math.random()<.5?makeWeapon(wt.length?pick(wt):pick(Object.keys(WTYPE).filter(x=>x!=='stick')),lv,rar):makeArmor(ARCH_A[J().arch]&&ARCH_A[J().arch]!=='cloth'?ARCH_A[J().arch]:pick(['robe','leather','chain','plate']),lv,rar);return it}
 function raidEnd(win){const R_=W.raid;R_.over=true;if(ROOM)ROOM.presence({rd:null}).catch(()=>{});const d=R_.def;
  if(win&&d.id==='pri_arena'){P.pri=P.pri||{};P.pri.done=true;P.frames=P.frames||{};P.frames[4]=true;const pit=raidReward(7,3000);if(P.bag.length<BAGMAX)P.bag.push(pit);save(true);sfx('fanfare');sysChat(`🌅 ${P.nick}님이 태초의 파수꾼을 쓰러뜨리고 [태초] 장비를 얻었습니다!`);window.layerLock=true;openLayer(`<h2>🌅 태초의 문이 열렸다</h2><p>파수꾼이 쓰러지고 태초의 우주로 가는 길이 열렸다. 🌌 차원 이동으로 언제든 갈 수 있다.</p><p>보상: <b style="color:${RAR[7].col};text-shadow:0 0 2px #000">[태초] ${esc(pit.name)}</b></p><button class="btn pri w" id="rback">성운의 신전으로</button>`,root=>root.querySelector('#rback').onclick=()=>{closeLayer();raidBack()});return}
- if(win&&d.id==='gogarena'){P.gog=P.gog||{};P.gog.m3=true;const git=raidReward(7,4000);if(P.bag.length<BAGMAX)P.bag.push(git);save(true);sysChat(`🌌 ${P.nick}님이 신 중의 신을 쓰러뜨렸습니다!`);window.layerLock=true;openLayer(`<h2>🌌 시련 통과</h2><p>신 중의 신을 쓰러뜨렸다. 태초의 성소로 돌아가 전직하라.</p><p>보상: <b style="color:${RAR[7].col};text-shadow:0 0 2px #000">[태초] ${esc(git.name)}</b></p><button class="btn pri w" id="rback">태초의 성소로</button>`,root=>root.querySelector('#rback').onclick=()=>{closeLayer();changeMap('p_gogsanc',11*TS,12*TS)});return}
+ if(win&&d.id==='gogarena'){P.gog=P.gog||{};P.gog.m3=true;const git=raidReward(7,4000);if(P.bag.length<BAGMAX)P.bag.push(git);save(true);sysChat(`🌌 ${P.nick}님이 태초의 신을 쓰러뜨렸습니다!`);window.layerLock=true;openLayer(`<h2>🌌 시련 통과</h2><p>태초의 신을 쓰러뜨렸다. 태초의 성소로 돌아가 전직하라.</p><p>보상: <b style="color:${RAR[7].col};text-shadow:0 0 2px #000">[태초] ${esc(git.name)}</b></p><button class="btn pri w" id="rback">태초의 성소로</button>`,root=>root.querySelector('#rback').onclick=()=>{closeLayer();changeMap('p_gogsanc',11*TS,12*TS)});return}
  if(win){const items=d.items.map(([r,l])=>raidReward(r,l));let extra=0;for(const it of items){if(P.bag.length<BAGMAX)P.bag.push(it);else extra+=wPrice(it)}const exp=P.lv<MAXLV?Math.round(need(P.lv)*d.expMul):0;P.gold+=d.gold+extra;P.raids=P.raids||{};P.raids[d.id]=(P.raids[d.id]||0)+1;
   sysChat(`🏆 ${P.nick}님이 ${d.name}를 클리어했습니다!`);sfx('fanfare');if(exp)gainExp(exp);save(true);pushBoard(true);
   const sec=Math.round(now()-R_.t0);
@@ -1802,7 +1802,7 @@ function useObj(o){
 }
 
 /* ================= 전직 ================= */
-function reqProg(r){switch(r[0]){case 'gogm1':return [P.gog&&P.gog.m1?1:0,1,'석상에 선함이 깃든 보석 봉인'];case 'gogm3':return [P.gog&&P.gog.m3?1:0,1,'신 중의 신 처치'];case 'raid':{const d=RAIDS.find(x=>x.id===r[1]);return [(P.raids&&P.raids[r[1]])||0,r[2],`${d?d.short:''} 레이드 클리어`]}case 'toilet':return [P.toilet||0,r[1],'마을 화장실 사용'];case 'pray':return [P.pray||0,r[1],'성당 제단에서 기도'];case 'kill':return [P.kc[r[1]]||0,r[2],`${MD[r[1]][0]} 처치`];case 'lv':return [P.lv,r[1],'레벨'];case 'ore':return [P.st.ores,r[1],'광석 채광'];case 'kills':return [P.st.kills,r[1],'몬스터 처치'];case 'uses':return [P.st.uses,r[1],'스킬 사용']}return [0,1,'?']}
+function reqProg(r){switch(r[0]){case 'gogm1':return [P.gog&&P.gog.m1?1:0,1,'석상에 선함이 깃든 보석 봉인'];case 'gogm3':return [P.gog&&P.gog.m3?1:0,1,'태초의 신 처치'];case 'raid':{const d=RAIDS.find(x=>x.id===r[1]);return [(P.raids&&P.raids[r[1]])||0,r[2],`${d?d.short:''} 레이드 클리어`]}case 'toilet':return [P.toilet||0,r[1],'마을 화장실 사용'];case 'pray':return [P.pray||0,r[1],'성당 제단에서 기도'];case 'kill':return [P.kc[r[1]]||0,r[2],`${MD[r[1]][0]} 처치`];case 'lv':return [P.lv,r[1],'레벨'];case 'ore':return [P.st.ores,r[1],'광석 채광'];case 'kills':return [P.st.kills,r[1],'몬스터 처치'];case 'uses':return [P.st.uses,r[1],'스킬 사용']}return [0,1,'?']}
 function reqsOk(id){return (HM[id]||[]).every(r=>{const p=reqProg(r);return p[0]>=p[1]})}
 function reqHtml(id){return (HM[id]||[]).map(r=>{const[a,b,t]=reqProg(r);return `<div>${a>=b?'✅':'⬜'} ${t} <b>${Math.min(a,b)}/${b}</b></div>`}).join('')}
 function parentsOf(id){return Object.keys(JD).filter(k=>JD[k][4].includes(id))}
@@ -1946,7 +1946,7 @@ function sceneFor(id){const m=MAPS[id];if(!m)return null;let x=MAPSTORY[id];if(!
 const STORY_FIXED={
  c0:{id:'c0',t:'프롤로그 — 별을 잇는 자',sub:'',x:'아주 먼 옛날, 이름 없는 신이 한 자루의 칼로 어둠을 갈라 세계를 빚었다. 사람들은 그것을 "태초의 칼"이라 불렀다.\n신들이 서로에게 칼끝을 겨눈 날, 칼은 빛 속으로 사라졌고 세계는 깨진 거울처럼 여러 우주로 갈라졌다.\n그리고 지금, 에르덴 성읍. 광장 분수 곁에서 눈을 뜬 당신의 손등에, 처음 보는 빛의 문장이 희미하게 빛나고 있다.',scene:{style:'village',seed:11,mons:[],player:true,uni:1}},
  c9:{id:'c9',t:'신의 자리',sub:'',x:'신의 대리자가 고개를 숙였다. "당신은 이제 우리가 섬기던 자리에 섰습니다."\n손등의 문장은 더 이상 희미하지 않다. 그러나 문장이 가리키는 곳은 아직 남아 있다. 신들보다 위, 이름조차 남지 않은 단 하나의 자리.',scene:{style:'divine',seed:99,mons:[],player:true,uni:1}},
- c10:{id:'c10',t:'에필로그 — 신 중의 신',sub:'',x:'태초의 석상이 눈을 떴고, 모든 우주의 별이 하나로 이어졌다.\n이름 없는 신이 처음 칼을 들었던 그날처럼, 이제 세계를 다시 빚을 차례가 당신에게 왔다.\n— 픽셀 퀘스트, 첫 번째 이야기 끝 —',scene:{style:'abyss',seed:123,mons:[],player:true,uni:4}}
+ c10:{id:'c10',t:'에필로그 — 태초의 신',sub:'',x:'태초의 석상이 눈을 떴고, 모든 우주의 별이 하나로 이어졌다.\n이름 없는 신이 처음 칼을 들었던 그날처럼, 이제 세계를 다시 빚을 차례가 당신에게 왔다.\n— 픽셀 퀘스트, 첫 번째 이야기 끝 —',scene:{style:'abyss',seed:123,mons:[],player:true,uni:4}}
 };
 function storyList(){const out=[STORY_FIXED.c0];for(const id in MAPS){const m=MAPS[id];if(m.safe||m.raid||m.hall)continue;const sc=sceneFor(id);if(sc)out.push(sc)}out.push(STORY_FIXED.c9,STORY_FIXED.c10);return out}
 let SCENE_ON=false;
@@ -2069,9 +2069,9 @@ function gogTalk(n){P.gog=P.gog||{};P.relic=P.relic||{};const r5=(P.raids&&P.rai
  if(P.job==='gog'){dialog(n.name,'모든 것 위에 선 자여. 이곳에 더 가르칠 것은 없습니다.',[{t:'📖 스킬 배우기',pri:1,f:()=>openLearn('gog',n.name)}]);return}
  const st=(ok,t)=>`<div>${ok?'✅':'⬜'} ${t}</div>`;
  const opts=[];
- if(m1&&m2&&!m3)opts.push({t:`🗝️ 열쇠를 사용해 시련에 들어가기 (보유 ${P.relic.key||0})`,pri:1,dis:!(P.relic.key>0),f:()=>ask('던전 열쇠를 사용해 <b>신 중의 신</b>에게 도전할까요?<br><span class=\"muted\">제한 시간 10분 · 실패해도 열쇠는 사라집니다.</span>',()=>{P.relic.key--;save(true);startRaid(RAIDS.find(x=>x.id==='gogarena'))})});
- if(m1&&m2&&m3)opts.push({t:'🌌 신 중의 신으로 전직',pri:1,f:()=>{if(P.lv<reqLv('gog')){toast(`레벨 ${reqLv('gog')} 이상이어야 합니다`);return}promote('gog');sysChat(`🌌🌌 ${P.nick}님이 신 중의 신이 되었습니다!!`)}});
- dialog(n.name,`…신의 자리에 오른 자여, 그 위를 바라는가.<br><br>${st(m1,'첫 번째 시련: 석상에 <b>선함이 깃든 보석</b>을 봉인하라')}${st(m2,`두 번째 시련: 종급 레이드 100회 클리어 (${Math.min(r5,100)}/100)`)}${st(m3,'세 번째 시련: <b>던전 열쇠</b>로 문을 열고 신 중의 신을 쓰러뜨려라')}`,opts);
+ if(m1&&m2&&!m3)opts.push({t:`🗝️ 열쇠를 사용해 시련에 들어가기 (보유 ${P.relic.key||0})`,pri:1,dis:!(P.relic.key>0),f:()=>ask('던전 열쇠를 사용해 <b>태초의 신</b>에게 도전할까요?<br><span class=\"muted\">제한 시간 10분 · 실패해도 열쇠는 사라집니다.</span>',()=>{P.relic.key--;save(true);startRaid(RAIDS.find(x=>x.id==='gogarena'))})});
+ if(m1&&m2&&m3)opts.push({t:'🌌 태초의 신으로 전직',pri:1,f:()=>{if(P.lv<reqLv('gog')){toast(`레벨 ${reqLv('gog')} 이상이어야 합니다`);return}promote('gog');sysChat(`🌌🌌 ${P.nick}님이 태초의 신이 되었습니다!!`)}});
+ dialog(n.name,`…신의 자리에 오른 자여, 그 위를 바라는가.<br><br>${st(m1,'첫 번째 시련: 석상에 <b>선함이 깃든 보석</b>을 봉인하라')}${st(m2,`두 번째 시련: 종급 레이드 100회 클리어 (${Math.min(r5,100)}/100)`)}${st(m3,'세 번째 시련: <b>던전 열쇠</b>로 문을 열고 태초의 신을 쓰러뜨려라')}`,opts);
 }
 /* ===== 사냥터 의뢰 / 정보상 ===== */
 function dirText(m,x,y){const dx=x-m.w*TS/2,dy=y-m.h*TS/2;const ns=dy<-m.h*TS*.15?'북':dy>m.h*TS*.15?'남':'',ew=dx<-m.w*TS*.15?'서':dx>m.w*TS*.15?'동':'';return ns+ew?ns+ew+'쪽':'한가운데'}
