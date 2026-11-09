@@ -860,13 +860,14 @@ function buildMaps(){
   v.portals.push({x:27,y:36,w:1,h:1,to:'home',ax:7*TS,ay:8.3*TS,lv:1,door:1});H.portals.push({x:6,y:9,w:2,h:1,to:'village',ax:27.5*TS,ay:37.6*TS,lv:1});
   H.spawnAt={x:3.6*TS,y:6.2*TS};MAPS.home=H}
  // 직업 길드 (마을 건물 안)
+ const HALL_LATE=[];window.__HALL_LATE=HALL_LATE;
  const HALLS=[
-  {id:'h_knight',name:'기사단 본부',theme:'crypt',w:30,h:22,door:'knight',label:'⚔️ 기사단 본부',old:'기사단 본부',jobs:['swd','spr','shd','ber']},
-  {id:'h_mage',name:'마법사의 탑',theme:'castle',w:30,h:22,door:'mage',label:'🔮 마법사의 탑',old:'마법사의 탑',jobs:['app','wit','dru','sha','alc']},
-  {id:'h_hunt',name:'사냥꾼 산장',theme:'harbor',w:26,h:20,door:'hunt',label:'🏹 사냥꾼 산장',old:'사냥꾼 산장',jobs:['arc','arw','wen']},
-  {id:'h_rogue',name:'도적 길드',theme:'castle',w:26,h:20,door:'rogue',label:'🗡️ 주점 · 도적 길드',old:'주점',jobs:['con','gam','bur','pkp']},
+  {id:'h_knight',name:'기사단 본부',theme:'crypt',w:30,h:22,door:'knight',at:['field',35,3,8,5,'#5a5a6a'],deco:'병영',label:'⚔️ 기사단 본부',old:'기사단 본부',jobs:['swd','spr','shd','ber']},
+  {id:'h_mage',name:'마법사의 탑',theme:'castle',w:30,h:22,door:'mage',at:['field',53,12,6,5,'#3a2a7a'],deco:'천문대',label:'🔮 마법사의 탑',old:'마법사의 탑',jobs:['app','wit','dru','sha','alc']},
+  {id:'h_hunt',name:'사냥꾼 산장',theme:'harbor',w:26,h:20,door:'hunt',at:['field',53,29,7,4,'#2a6a3a'],deco:'가죽 공방',label:'🏹 사냥꾼 산장',old:'사냥꾼 산장',jobs:['arc','arw','wen']},
+  {id:'h_rogue',name:'도적 길드',theme:'castle',w:26,h:20,door:'rogue',at:['mine',6,36,6,4,'#5a2a1e'],deco:'주점',label:'🗡️ 주점 · 도적 길드',old:'주점',jobs:['con','gam','bur','pkp']},
   {id:'h_castle',name:'영주성 대전',theme:'cathedral',w:26,h:20,door:'castle',label:'🏰 영주성',old:'영주성',jobs:['far','msn']},
-  {id:'h_music',name:'음악당',theme:'divine',w:22,h:16,door:'music',label:'🎵 음악당',old:'음악당',jobs:['brd','sop']}
+  {id:'h_music',name:'음악당',theme:'divine',w:22,h:16,door:'music',at:['field',3,30,6,4,'#c43c8a'],deco:'공연장',label:'🎵 음악당',old:'음악당',jobs:['brd','sop']}
  ];
  const HALL_DECO={h_knight:{col:'#6a2424',d:(cx,W_,H_)=>[['hrack',5,1.9],['hrack',9,1.9],['hrack',W_-6,1.9],['hrack',W_-10,1.9],['hbanner',cx-3,1.4,'#8a1a1a'],['hbanner',cx+4,1.4,'#8a1a1a'],['hbarrel',2.5,H_-2.4]]},
   h_mage:{col:'#3e2470',d:(cx,W_,H_)=>[['hshelf',5,1.9],['hshelf',9,1.9],['hshelf',W_-6,1.9],['hshelf',W_-10,1.9],['hcircle',cx+.5,H_/2],['htable',cx-6,3.6],['htable',cx+7,3.6],['hbanner',cx-3,1.4,'#5a2a9a'],['hbanner',cx+4,1.4,'#5a2a9a']]},
@@ -882,10 +883,9 @@ function buildMaps(){
   if(H.id==='h_castle')m.objs.push({kind:'board',name:'영지 게시판',x:(cx+4.5)*TS,y:3.8*TS});
   const per=Math.ceil(H.jobs.length/2),step=per>1?(H.h-9)/(per-1):0;
   H.jobs.forEach((jid,i)=>{const left=i<per,row=left?i:i-per;TRAINERS[jid]=[H.id,left?3.5:H.w-3.5,4.8+row*step,TRAINERS[jid]?TRAINERS[jid][3]:JD[jid][0]+' 스승']});
-  const v=MAPS.village,[dx,dy]=v.doors[H.door];
-  v.portals.push({x:dx,y:dy,w:1,h:1,to:H.id,ax:(cx+.5)*TS,ay:(H.h-2.4)*TS,lv:1,door:1});
-  m.portals.push({x:cx-1,y:H.h-1,w:3,h:1,to:'village',ax:(dx+.5)*TS,ay:(dy+1.7)*TS,lv:1});
-  const b=v.b.find(b=>b.label===H.old);if(b)b.label=H.label+' (입구)';
+  const v=MAPS.village,[dx,dy]=v.doors[H.door];const b=v.b.find(b=>b.label===H.old);m.cx_=cx;
+  if(H.at){if(b)b.label=H.deco;m.hallAt=H.at;HALL_LATE.push(H)}
+  else{v.portals.push({x:dx,y:dy,w:1,h:1,to:H.id,ax:(cx+.5)*TS,ay:(H.h-2.4)*TS,lv:1,door:1});m.portals.push({x:cx-1,y:H.h-1,w:3,h:1,to:'village',ax:(dx+.5)*TS,ay:(dy+1.7)*TS,lv:1});if(b)b.label=H.label+' (입구)'}
   m.signs=[{x:(cx+.5)*TS,y:1.5*TS,t:H.label}];MAPS[H.id]=m}
  TRAINERS.cook=['harbor',37,10.6,'주방장 토마스'];
  // 2차 이상 스승은 사냥터·던전으로
@@ -1001,6 +1001,12 @@ function buildMaps(){
   m.npcs.push({name:nm,tpl:j.tpl,pal:j.pal,role:'trainer',job:jid,x:p.x,y:p.y,hidden:!!JD[jid][7],godOnly:jid==='god',finOnly:jid.startsWith('fin_')})}
  MAPS.field.npcs.push({name:'초보 모험가 지원관',tpl:'archer',pal:BASEPAL.archer,role:'guard',...placeNear(MAPS.field,5,21),lines:['슬라임은 약하지만 고블린은 물건을 노린다네. 북쪽 고블린 굴은 Lv 10, 동쪽 늪은 Lv 15부터 들어갈 수 있어!']});
  MAPS.mine.npcs.push({name:'광산 안내원 브록',tpl:'worker',pal:{...BASEPAL.worker,A:'#e0b23a',O:'#5a4a3a'},role:'guard',...placeNear(MAPS.mine,23,44),lines:['깊이 들어갈수록 귀한 광석이 나와. 미스릴이랑 다이아는 맨 안쪽이야. 곡괭이 등급을 꼭 확인해!']});
+ // 직업 길드 건물을 사냥터에 세우기
+ for(const H of (window.__HALL_LATE||[])){const [mid,X,Y,w,h,roof]=H.at,m=MAPS[mid],hm=MAPS[H.id];if(!m||!hm)continue;
+  const fl=mid==='mine'?5:0,rt=mid==='mine'?5:1;rect(m,X-2,Y-1,X+w+1,Y+h+2,fl);house(m,X,Y,w,h,roof,H.label+' (입구)');const dx=X+Math.floor(w/2),dy=Y+h;setT(m,dx,dy,rt);
+  road(m,rng(X*31+Y),[dx,dy+1],[Math.floor(m.w/2),Math.floor(m.h/2)],rt,.2);
+  m.portals.push({x:dx,y:dy,w:1,h:1,to:H.id,ax:(hm.cx_+.5)*TS,ay:(hm.h-2.4)*TS,lv:1,door:1});
+  hm.portals.push({x:hm.cx_-1,y:hm.h-1,w:3,h:1,to:mid,ax:(dx+.5)*TS,ay:(dy+1.7)*TS,lv:1});hm.parentMap=mid}
  // 텔레포트 석
  const TELE_AT={village:[25.5,26.6],cathedral:[26,14.8],harbor:[31,15.6]};
  for(const k in MAPS){const m=MAPS[k];if(m.hall)continue;let p;if(TELE_AT[k])p={x:TELE_AT[k][0]*TS,y:TELE_AT[k][1]*TS};else{const back=m.portals.find(q=>!q.door&&q.lv<=1)||m.portals[0];const bx=back.x+back.w/2,by=back.y+back.h/2;const cx=m.w/2,cy=m.h/2;p=placeNear(m,bx+(cx-bx)*.18+(back.h>1?0:3),by+(cy-by)*.18+(back.h>1?3:-1))}
@@ -1783,7 +1789,7 @@ function reqProg(r){switch(r[0]){case 'gogm1':return [P.gog&&P.gog.m1?1:0,1,'석
 function reqsOk(id){return (HM[id]||[]).every(r=>{const p=reqProg(r);return p[0]>=p[1]})}
 function reqHtml(id){return (HM[id]||[]).map(r=>{const[a,b,t]=reqProg(r);return `<div>${a>=b?'✅':'⬜'} ${t} <b>${Math.min(a,b)}/${b}</b></div>`}).join('')}
 function parentsOf(id){return Object.keys(JD).filter(k=>JD[k][4].includes(id))}
-function where(id){const t=TRAINERS[id];return t?`${MAPS[t[0]].name} · ${t[3]}`:'?'}
+function where(id){const t=TRAINERS[id];if(!t)return '?';const m=MAPS[t[0]];return `${m.parentMap&&MAPS[m.parentMap]?MAPS[m.parentMap].name+'의 ':''}${m.name} · ${t[3]}`}
 const isHidBase=id=>JD[id][7]&&JD[id][3]===1;
 /* 0: 불가, 1: 길은 맞지만 조건 부족, 2: 지금 전직 가능 */
 const JOB_LV={spi:50,ang:150,dem:150,arA:300,fal:300,dkl:300,atn:300,god:600,gog:900};
@@ -2075,7 +2081,7 @@ function infoTalk(n){
  const j=J(),nexts=(P.job==='none'?[]:j.next).filter(x=>x!=='gog'&&!x.startsWith('fin_')&&!JD[x][7]);
  const where_=id=>{const t=TRAINERS[id];if(!t)return '어딘가';const m=MAPS[t[0]];const npc=m&&m.npcs.find(x=>x.job===id);return m?`<b>${m.name}</b>${npc&&!m.safe?` ${dirText(m,npc.x,npc.y)}`:''}`:'어딘가'};
  dialog(n.name,'정보가 필요해? 세상 소문이라면 다 내 귀로 들어오지.',[
-  {t:'⭐ 내 다음 전직 스승',pri:1,f:()=>dialog(n.name,P.job==='none'?'아직 직업이 없군. 1차 직업 스승들은 전부 <b>마을과 성당, 항구, 광산</b>에 있어. 길드 건물 안에 많이 모여 있지. ⭐ 직업 메뉴에서도 확인할 수 있어.':nexts.length?nexts.map(id=>`⭐ <b>${JD[id][0]}</b> — ${where_(id)} (Lv ${reqLv(id)})`).join('<br>'):'흠… 네 길의 다음은 나도 모르겠어. 어쩌면 정말 끝일지도, 아니면 아무도 모르는 무언가가 있을지도.',[])},
+  {t:'⭐ 내 다음 전직 스승',pri:1,f:()=>dialog(n.name,P.job==='none'?'아직 직업이 없군. 1차 직업 스승들은 <b>푸른 초원</b>과 <b>깊은 광산</b>의 길드 건물, 그리고 <b>성당·항구·영주성</b>에 있어. ⭐ 직업 메뉴에서도 확인할 수 있어.':nexts.length?nexts.map(id=>`⭐ <b>${JD[id][0]}</b> — ${where_(id)} (Lv ${reqLv(id)})`).join('<br>'):'흠… 네 길의 다음은 나도 모르겠어. 어쩌면 정말 끝일지도, 아니면 아무도 모르는 무언가가 있을지도.',[])},
   {t:'👂 히든 직업 소문 (100G)',dis:P.gold<100,f:()=>{P.gold-=100;sfx('coin');const keys=Object.keys(RUMORS);const k=pick(keys);dialog(n.name,`이건 비밀인데… <b>[${JD[k][0]}]</b><br>${RUMORS[k]}`,[])}}
  ]);
 }
@@ -2086,7 +2092,7 @@ const JONDU=[
  ['🎁 전리품','몬스터를 쓰러뜨리면 <b>경험치와 골드</b>를 얻고, 가끔 <b>무기·갑옷</b>이나 전리품이 떨어지지. 바닥에 반짝이는 건 가까이 가기만 하면 저절로 주워진다네.'],
  ['🎒 가방','위쪽 버튼 중 <b>🎒 가방</b>에서 장비를 바꿔 낄 수 있어. 등급이 높을수록 이름 색이 화려하지. 필요 없는 건 상점이나 가방에서 한꺼번에 팔아 버리게.'],
  ['🧪 회복','체력이 떨어지면 <b>🧪 물약 버튼</b>을 누르게. 물약은 마을 상점에서 팔고, 한동안 싸우지 않으면 체력이 저절로 차오른다네. 마을 안에서는 더 빨리 회복되지.'],
- ['⭐ 직업','<b>레벨 5</b>가 되면 직업을 가질 수 있어. 마을 건물 안의 길드와 성당, 항구에 <b>스승</b>들이 있지. 검사, 마법사, 궁수, 성직자… 고를 수 있는 길이 서른 가지가 넘는다네. 숨겨진 직업도 있다는 소문이 있고 말이야.'],
+ ['⭐ 직업','<b>레벨 5</b>가 되면 직업을 가질 수 있어. 마을 동문 밖 <b>푸른 초원</b>과 북쪽 <b>깊은 광산</b>에 직업 길드 건물이 서 있고, 성당과 항구에도 <b>스승</b>들이 있지. 검사, 마법사, 궁수, 성직자… 고를 수 있는 길이 서른 가지가 넘는다네. 숨겨진 직업도 있다는 소문이 있고 말이야.'],
  ['✨ 스킬','직업을 얻으면 스승에게 골드를 내고 <b>스킬</b>을 배울 수 있네. 배운 스킬은 <b>⭐ 메뉴</b>에서 화면 오른쪽 아래 버튼에 끼우면 바로 쓸 수 있지. 마나(파란 막대)가 필요하니 아껴 쓰게.'],
  ['🌳 스킬 트리','레벨이 오를 때마다 <b>🌳 스킬 트리</b> 포인트가 3개씩 생긴다네. 공격, 생존, 마력, 사냥… 원하는 쪽으로 키우면 되지. 잘못 찍었으면 골드를 내고 초기화할 수도 있어.'],
  ['📜 의뢰','광장의 <b>마을 이장 한스</b>가 일거리를 주고, 사냥터마다 <b>의뢰인</b>도 서 있다네. 의뢰를 끝내면 경험치와 골드를 두둑이 주니 꼭 들러 보게.'],
