@@ -1020,9 +1020,11 @@ function buildMaps(){
  const MQN={field:'초원 경비대장 마르코',mine:'광산 감독관 바위손',cave1:'고블린 토벌대장 한',swamp:'늪지 탐험가 이네스',forest:'숲의 파수꾼 엘드',crypt:'묘지기 그레이브',snow:'설원 개척민 볼크',canyon:'협곡 정찰병 라일',castle:'토벌군 지휘관 레오닉',volcano:'화산 연구가 이그니',lair:'용 사냥꾼 지크',sky:'천공의 순례자 아우라',abyss:'심연 감시자 노크',chaos:'차원 방랑자 젝스',divine:'전장의 기록관 테오'};
  for(const k in MAPS){const m=MAPS[k];if(m.safe||m.raid||m.hall||!m.spawns||!m.spawns.length)continue;const tp=m.tele||{x:m.w*TS/2,y:m.h*TS/2};const p=placeNear(m,Math.floor(tp.x/TS)+3,Math.floor(tp.y/TS));m.npcs.push({name:MQN[k]||(m.name+' 의뢰인'),tpl:'knight',pal:{...BASEPAL.knight,A:'#4a6a3a',a:'#2e4a24',R:'#e0b23a'},role:'mquest',x:p.x,y:p.y})}
  MAPS.village.npcs.push({name:'떠돌이 정보상 렌',tpl:'rogue',pal:{...BASEPAL.rogue,H:'#5a4a2a',h:'#3a2e1a',C:'#8a6a3a',c:'#5a4424',M:'#c8a040'},role:'info',x:24.5*TS,y:30.6*TS});
+ for(const id of ['u2_hub','u3_hub','p_village']){const m=MAPS[id];if(!m)continue;const a=m.spawnAt||{x:m.w*TS/2,y:m.h*TS/2};const p=placeNear(m,Math.floor(a.x/TS)+4,Math.floor(a.y/TS)-2);m.npcs.push({name:'차원 의뢰 중개인 미라주',tpl:'mage',pal:{...BASEPAL.mage,P:'#2a6a8a',p:'#1a4a5a',Y:'#ffd84a'},role:'qbroker',x:p.x,y:p.y})}
  for(const k in MAPS){if(!MAPS[k].safe)ensureReach(MAPS[k])}
  addExtraMonsters();
  cloneU4();
+ {const m=MAPS.p_village;if(m&&!m.npcs.some(n=>n.role==='qbroker')){const a=m.spawnAt||{x:m.w*TS/2,y:m.h*TS/2};const p=placeNear(m,Math.floor(a.x/TS)+4,Math.floor(a.y/TS)-2);m.npcs.push({name:'차원 의뢰 중개인 미라주',tpl:'mage',pal:{...BASEPAL.mage,P:'#2a6a8a',p:'#1a4a5a',Y:'#ffd84a'},role:'qbroker',x:p.x,y:p.y})}}
  for(const k in MAPS)if(k.startsWith('p_')&&MAPS[k.slice(2)])MAPS[k].src=k.slice(2);
  renderMap(MAPS.village);
 }
@@ -1159,9 +1161,9 @@ function killMon(m,byPlayer){
  if(!MAP.raid&&(m.boss||Math.random()<.11*dm)){const types=Object.keys(WTYPE).filter(x=>x!=='stick');const ty=MON_W[m.k]&&Math.random()<.6?MON_W[m.k]:pick(types);drop({w:makeWeapon(ty,m.lv,rollRar(m.boss,m.lv,rl))});
   if(m.boss&&Math.random()<.5){const own=ARCH_W[J().arch]||types;drop({w:makeWeapon(pick(own.filter(x=>x!=='stick').length?own.filter(x=>x!=='stick'):types),m.lv,rollRar(true,m.lv,rl))})}}
  P.kc[m.k]=(P.kc[m.k]||0)+1;uniDrops(m);
- if(P.mq&&P.mq[MAP.id]){const q=P.mq[MAP.id];if(q.c<q.n&&q.k===m.k){q.c++;if(q.c>=q.n){const id_=MAP.id;setTimeout(()=>mqComplete(id_),0)}}}
+ mqProgress(MAP.id,m.k);
  if((MAP.id==='divine'||MAP.id==='p_divine')&&P.job==='god'){P.relic=P.relic||{};if(m.boss&&m.k==='fallenGod'&&Math.random()<.01){P.relic.gem=(P.relic.gem||0)+1;toast('💎 선함이 깃든 보석을 얻었다!');sfx('rare')}if(!m.boss&&!m.summoned&&Math.random()<.01){P.relic.key=(P.relic.key||0)+1;toast('🗝️ 던전 열쇠를 얻었다!');sfx('rare')}}
- if(P.quest&&P.quest.type==='kill'&&P.quest.k===m.k&&P.quest.c<P.quest.n){P.quest.c++;if(P.quest.c>=P.quest.n)setTimeout(chiefComplete,0)}
+ questProgress('kill',m.k,1);
  if(m.boss){P.st.bosses++;toast(`👑 ${eul(m.name)} 쓰러뜨렸다! +${gold}G`);sysChat(`${P.nick}님이 ${eul(m.name)} 처치했습니다!`);if(m.k==='dragon')P.st.dragon++}
  gainExp(exp);
 }
@@ -1313,11 +1315,11 @@ function cancelTask(){P.task=null;$('#prog').style.display='none'}
 function finishTask(){
  const k=P.task;P.task=null;$('#prog').style.display='none';
  if(k.type==='mine'){const o=ORES[k.ref.type];const dbl=Math.random()<.03*(TV('vein')||0)+({min:.15,vmn:.3}[P.job]||0);const n=dbl?2:1;
-  P.ores[k.ref.type]=(P.ores[k.ref.type]||0)+n;P.st.ores+=n;k.ref.dead=now()+40;sfx('mine');if(P.quest&&P.quest.type==='ore'&&P.quest.k===k.ref.type&&P.quest.c<P.quest.n){P.quest.c=Math.min(P.quest.n,P.quest.c+n);if(P.quest.c>=P.quest.n)setTimeout(chiefComplete,0)}
+  P.ores[k.ref.type]=(P.ores[k.ref.type]||0)+n;P.st.ores+=n;k.ref.dead=now()+40;sfx('mine');questProgress('ore',k.ref.type,n);
   ftxt(k.ref.x,k.ref.y-14,`+${n} ${o.n}`,o.c,dbl);fx({type:'puff',x:k.ref.x,y:k.ref.y-4,life:.4,col:o.c});
   }
  else if(k.type==='fish'){const r=Math.random(),rare=P.job==='fis'?.06:.02;const f=r<rare?'gcarp':r<.25?'trout':r<.55?'carp':'crucian';
-  P.fish[f]=(P.fish[f]||0)+1;sfx('splash');if(P.quest&&P.quest.type==='fish'&&P.quest.c<P.quest.n){P.quest.c++;if(P.quest.c>=P.quest.n)setTimeout(chiefComplete,0)}ftxt(P.x,P.y-24,`🐟 ${FISH[f].n}!`,f==='gcarp'?'#ffd84a':'#9fd8ff',f==='gcarp');if(f==='gcarp')sysChat(`${P.nick}님이 황금 잉어를 낚았습니다!`)}
+  P.fish[f]=(P.fish[f]||0)+1;sfx('splash');questProgress('fish',null,1);ftxt(P.x,P.y-24,`🐟 ${FISH[f].n}!`,f==='gcarp'?'#ffd84a':'#9fd8ff',f==='gcarp');if(f==='gcarp')sysChat(`${P.nick}님이 황금 잉어를 낚았습니다!`)}
 }
 
 /* ================= 맵 이동 ================= */
@@ -1595,7 +1597,7 @@ function render(){
  const ents=[];
  for(const o of MAP.ores)ents.push({y:o.y,d:()=>drawOre(o)});
  for(const o of MAP.objs){if((o.godOnly&&!godSees())||(o.gogOnly&&!gogSees()))continue;ents.push({y:o.y,d:()=>drawObj(o)})}
- for(const n of MAP.npcs){if(n.godOnly&&!godSees())continue;if(n.finOnly&&!finSees(n))continue;ents.push({y:n.y,d:()=>{drawEnt(n.tpl,n.pal,n.x,n.y,1,n.flip,false,n.moving);tagF(n.x,n.y-19,n.name,n.role==='villager'?'#e8e0d0':'#ffe39a',4.5);if(n.role==='trainer'){const st=P?trainState(n.job):0;tagF(n.x,n.y-25+Math.sin(t*4)*1,n.hidden?'❓':'⭐',st===2?'#ffd84a':'#9a94a8',st===2?7:5.5);tagF(n.x,n.y-14.5,JD[n.job][0]+(n.hidden?' (히든)':'')+' 전직',st===2?'#ffd84a':'#c8c0d8',3.6)}else if(n.role==='chief'){tagF(n.x,n.y-25+Math.sin(t*4)*1,P&&P.quest&&P.quest.c>=P.quest.n?'✅':P&&P.quest?'💬':'❗','#ffd84a',7)}else if(n.role!=='villager'&&n.role!=='guard'){tagF(n.x,n.y-25+Math.sin(t*4)*1,'!','#ffd84a',7)}}});}
+ for(const n of MAP.npcs){if(n.godOnly&&!godSees())continue;if(n.finOnly&&!finSees(n))continue;ents.push({y:n.y,d:()=>{drawEnt(n.tpl,n.pal,n.x,n.y,1,n.flip,false,n.moving);tagF(n.x,n.y-19,n.name,n.role==='villager'?'#e8e0d0':'#ffe39a',4.5);if(n.role==='trainer'){const st=P?trainState(n.job):0;tagF(n.x,n.y-25+Math.sin(t*4)*1,n.hidden?'❓':'⭐',st===2?'#ffd84a':'#9a94a8',st===2?7:5.5);tagF(n.x,n.y-14.5,JD[n.job][0]+(n.hidden?' (히든)':'')+' 전직',st===2?'#ffd84a':'#c8c0d8',3.6)}else if(n.role==='chief'){tagF(n.x,n.y-25+Math.sin(t*4)*1,P&&getCQ().length>=QSLOTS()?'💬':'❗','#ffd84a',7)}else if(n.role!=='villager'&&n.role!=='guard'){tagF(n.x,n.y-25+Math.sin(t*4)*1,'!','#ffd84a',7)}}});}
  for(const m of W.mons)ents.push({y:m.y,d:()=>{const fl=m.flipBase?m.face<0:m.face>0;
   const pal=m.slow>0?Object.fromEntries(Object.entries(m.pal).map(([k,v])=>[k,k==='k'?'#0a2a40':'#9fd8ff'])):m.pal;
   drawEnt(m.tpl,pal,m.x,m.y,m.sc,fl,m.flash>0,true,m.atkT);
@@ -1719,8 +1721,10 @@ function updHud(){
  <div class="bar bh"><i style="width:${pct(P.hp,S.hp)}%"></i><b>${Math.ceil(P.hp)}/${S.hp}</b></div>
  <div class="bar bm"><i style="width:${pct(P.mp,S.mp)}%"></i><b>${Math.floor(P.mp)}/${S.mp}</b></div>
  <div class="bar bx"><i style="width:${P.lv>=MAXLV?100:pct(P.exp,need(P.lv))}%"></i><b>${P.lv>=MAXLV?'MAX':Math.floor(pct(P.exp,need(P.lv)))+'%'}</b></div>`;
- if(P.quest){const q=P.quest;h.insertAdjacentHTML('beforeend',`<div style="margin-top:4px;font-size:11px;color:${q.c>=q.n?'#9be15d':'#ffe39a'}">📜 ${q.c>=q.n?'완료! 이장에게 보고':`${q.type==='kill'?MD[q.k][0]:q.type==='ore'?ORES[q.k].n:'물고기'} ${q.c}/${q.n}`}</div>`)}else if(!P.qn&&MAP&&MAP.id==='village')h.insertAdjacentHTML('beforeend','<div style="margin-top:4px;font-size:11px;color:#ffe39a">❗ 마을 이장에게 말을 걸어보세요</div>');
- if(P.mq&&MAP&&P.mq[MAP.id]){const q=P.mq[MAP.id];h.insertAdjacentHTML('beforeend',`<div style="font-size:11px;color:${q.c>=q.n?'#9be15d':'#bff0ff'}">🗺️ ${q.c>=q.n?'의뢰 완료! 의뢰인에게 보고':`${MD[q.k][0]} ${q.c}/${q.n}`}</div>`)}
+ {const cq=getCQ(),mq=MAP?getMQ(MAP.id):[];
+  for(const q of cq)h.insertAdjacentHTML('beforeend',`<div style="margin-top:2px;font-size:11px;color:#ffe39a">📜 ${q.type==='kill'?MD[q.k][0]:q.type==='ore'?ORES[q.k].n:'물고기'} ${q.c}/${q.n}</div>`);
+  if(!cq.length&&!P.qn&&MAP&&MAP.id==='village')h.insertAdjacentHTML('beforeend','<div style="margin-top:4px;font-size:11px;color:#ffe39a">❗ 마을 이장에게 말을 걸어보세요</div>');
+  for(const q of mq)h.insertAdjacentHTML('beforeend',`<div style="font-size:11px;color:#bff0ff">🗺️ ${MD[q.k][0]} ${q.c}/${q.n}</div>`)}
  const sp=$('#spc');sp.hidden=!P.sp;sp.textContent=P.sp;
 }
 const KIND_EM={genesis:'🌌',eternity:'♾️',oneness:'☯️',creation:'🌅',timestop:'⏳',judgment:'⚔️',chain:'⚡',trap:'🪤',vortex:'🌀',barrier:'🛡️',aura:'🔆',leap:'🦘',wave:'🌊',beam:'🔦',orbit:'💫',push:'👐',blink:'👻',dash:'💨',thrust:'🔱',slash:'⚔️',steal:'🖐️',drain:'🩸',dice:'🎲',spin:'🌀',nova:'✴️',bolt:'☄️',multi:'✨',rain:'🌧️',meteor:'🔥',heal:'💚',regen:'💗',buff:'⬆️',summon:'👻'};
@@ -1762,7 +1766,7 @@ function dialog(who,say,opts){DLG=opts||[];const d=$('#dialog');d.innerHTML=`<di
 function closeDialog(){$('#dialog').classList.remove('on')}
 function talk(n){
  n.flip=P.x<n.x;
- if(n.role==='trainer')return trainerTalk(n);if(n.role==='raid')return openRaid();if(n.role==='gogkeeper')return gogTalk(n);if(n.role==='jondu')return jonduTalk(n);if(n.role==='mquest')return mqTalk(n);if(n.role==='info')return infoTalk(n);if(n.role==='ship')return shipTalk(n);if(n.role==='guide1'||n.role==='guide2')return guideTalk(n);if(n.role==='dimpriest')return dimPriest(n);if(n.role==='prguide')return priGuide(n);if(n.role==='prrumor')return priRumor(n);if(n.role==='wshop')return dialog(n.name,'좋은 무기는 목숨을 지켜주지. 몬스터가 떨군 무기도 내가 사주마.',[{t:'⚔️ 무기 사기·팔기',pri:1,f:()=>openGear('w','buy')}]);if(n.role==='ashop')return dialog(n.name,'갑옷 없이 사냥터에 나가는 건 바보짓이야. 쓰던 갑옷도 팔고 가.',[{t:'🛡️ 갑옷 사기·팔기',pri:1,f:()=>openGear('a','buy')}]);if(n.role==='chief')return chiefTalk(n);
+ if(n.role==='trainer')return trainerTalk(n);if(n.role==='raid')return openRaid();if(n.role==='gogkeeper')return gogTalk(n);if(n.role==='jondu')return jonduTalk(n);if(n.role==='qbroker')return qbrokerTalk(n);if(n.role==='mquest')return mqTalk(n);if(n.role==='info')return infoTalk(n);if(n.role==='ship')return shipTalk(n);if(n.role==='guide1'||n.role==='guide2')return guideTalk(n);if(n.role==='dimpriest')return dimPriest(n);if(n.role==='prguide')return priGuide(n);if(n.role==='prrumor')return priRumor(n);if(n.role==='wshop')return dialog(n.name,'좋은 무기는 목숨을 지켜주지. 몬스터가 떨군 무기도 내가 사주마.',[{t:'⚔️ 무기 사기·팔기',pri:1,f:()=>openGear('w','buy')}]);if(n.role==='ashop')return dialog(n.name,'갑옷 없이 사냥터에 나가는 건 바보짓이야. 쓰던 갑옷도 팔고 가.',[{t:'🛡️ 갑옷 사기·팔기',pri:1,f:()=>openGear('a','buy')}]);if(n.role==='chief')return chiefTalk(n);
  switch(n.role){
    case 'shop':dialog(n.name,'어서 오세요! 물약이 필요하시죠?',[{t:'🏪 상점 열기',pri:1,f:openShop}]);break;
   case 'smith':dialog(n.name,'광석만 가져오면 장비를 단단하게 강화해주지. 광석도 사들이고 있다네.',[{t:'🔨 강화·판매',pri:1,f:openSmith}]);break;
@@ -2063,22 +2067,30 @@ function dirText(m,x,y){const dx=x-m.w*TS/2,dy=y-m.h*TS/2;const ns=dy<-m.h*TS*.1
 function newMapQuest(m){const boss=m.boss&&Math.random()<.25;if(boss)return {k:m.boss.k,n:1,c:0,boss:1};const s_=pick(m.spawns);return {k:s_.k,n:RI(10,20),c:0}}
 /* ===== 의뢰 완료 즉시 보상 ===== */
 function questBanner(title,exp,gold,extra){sfx('fanfare');toast(`🎉 ${title} 완료! +${exp.toLocaleString()} EXP · +${gold.toLocaleString()}G${extra?' · '+extra:''}`);addChat('',`🎉 ${title} 완료 — 경험치 ${exp.toLocaleString()}, ${gold.toLocaleString()}G${extra?', '+extra:''}`,'sys')}
-function chiefComplete(){const q=P.quest;if(!q||q.c<q.n||q.done)return;q.done=1;
- const exp=Math.round(need(P.lv)*QUEST_EXP_CHIEF),gold=50+P.lv*25;P.quest=null;P.qn=(P.qn||0)+1;P.gold+=gold;P.items.potion=(P.items.potion||0)+2;
- questBanner('이장의 미션',exp,gold,'🧪 물약 2개');gainExp(exp);P.quest=newQuest();setTimeout(()=>toast(`📜 새 미션: ${questText(P.quest)}`),1800);save(true)}
-function mqComplete(id){const m=MAPS[id],q=P.mq&&P.mq[id];if(!m||!q||q.c<q.n||q.done)return;q.done=1;
+const QSLOT_PRICE=[0,0,1e6,1e7,1e8,5e8];
+function QSLOTS(){return Math.max(1,Math.min(5,P&&P.qslots||1))}
+function getCQ(){if(!P)return [];if(!P.quests){P.quests=P.quest?[P.quest]:[];P.quest=null}return P.quests}
+function getMQ(id){if(!P||!id)return [];P.mq=P.mq||{};const v=P.mq[id];if(!v)return [];if(!Array.isArray(v))P.mq[id]=[v];return P.mq[id]}
+function questProgress(type,k,n){for(const q of getCQ()){if(q.type!==type||q.c>=q.n||q.done)continue;if(type!=='fish'&&q.k!==k)continue;q.c=Math.min(q.n,q.c+n);if(q.c>=q.n){const qq=q;setTimeout(()=>chiefComplete(qq),0)}}}
+function mqProgress(id,k){for(const q of getMQ(id)){if(q.k!==k||q.c>=q.n||q.done)continue;q.c++;if(q.c>=q.n){const qq=q;setTimeout(()=>mqComplete(id,qq),0)}}}
+function chiefComplete(q){const arr=getCQ();if(!q||q.done||q.c<q.n)return;q.done=1;
+ const exp=Math.round(need(P.lv)*QUEST_EXP_CHIEF),gold=50+P.lv*25;arr.splice(arr.indexOf(q),1);P.qn=(P.qn||0)+1;P.gold+=gold;P.items.potion=(P.items.potion||0)+2;
+ questBanner('이장의 미션',exp,gold,'🧪 물약 2개');gainExp(exp);const nq=newQuest();arr.push(nq);setTimeout(()=>toast(`📜 새 미션: ${questText(nq)}`),1800);save(true)}
+function mqComplete(id,q){const m=MAPS[id],arr=getMQ(id);if(!m||!q||q.done||q.c<q.n)return;q.done=1;
  const exp=Math.round(need(P.lv)*QUEST_EXP_MQ*(q.boss?1.5:1)),gold=Math.round((m.minLv*30+200)*(q.boss?2:1)),pot=P.lv>=15?'hipot':'potion';
- P.mqDone=P.mqDone||{};const u=m.uni||uniOf();P.mqDone[u]=(P.mqDone[u]||0)+1;P.gold+=gold;P.items[pot]=(P.items[pot]||0)+2;
- questBanner(`${m.name} 의뢰`,exp,gold,`${CONS[pot].e} ${CONS[pot].n} 2개`);gainExp(exp);P.mq[id]=newMapQuest(m);const nq=P.mq[id];setTimeout(()=>toast(`🗺️ 새 의뢰: ${MD[nq.k][0]} ${nq.n}${nq.boss?'번':'마리'} 처치`),1800);save(false)}
-function mqTalk(n){P.mq=P.mq||{};const m=MAP,q=P.mq[m.id];
+ arr.splice(arr.indexOf(q),1);P.mqDone=P.mqDone||{};const u=m.uni||uniOf();P.mqDone[u]=(P.mqDone[u]||0)+1;P.gold+=gold;P.items[pot]=(P.items[pot]||0)+2;
+ questBanner(`${m.name} 의뢰`,exp,gold,`${CONS[pot].e} ${CONS[pot].n} 2개`);gainExp(exp);const nq=newMapQuest(m);arr.push(nq);setTimeout(()=>toast(`🗺️ 새 의뢰: ${MD[nq.k][0]} ${nq.n}${nq.boss?'번':'마리'} 처치`),1800);save(false)}
+function qbrokerTalk(n){const s_=QSLOTS();const nx=s_+1,price=QSLOT_PRICE[nx];
+ dialog(n.name,`차원을 건너온 모험가로군. 나는 여러 우주의 의뢰를 중개하지.<br>지금 자네는 의뢰인 한 명에게서 <b>한 번에 ${s_}개</b>까지 의뢰를 받을 수 있네.${s_<5?`<br>계약서를 늘리면 <b>${nx}개</b>까지 동시에 받을 수 있지. 값은 <b>${price.toLocaleString()}G</b>일세.`:'<br>이미 최대(5개)일세. 더 해 줄 게 없군.'}<br><span class="muted">마을 이장의 미션과 각 사냥터 의뢰에 모두 적용돼요.</span>`,
+  s_<5?[{t:`📜 의뢰 계약서 (+1칸) · ${price.toLocaleString()}G`,pri:1,dis:P.gold<price,f:()=>{if(P.gold<price){toast('골드가 부족합니다');return}P.gold-=price;P.qslots=nx;sfx('fanfare');toast(`📜 이제 한 번에 의뢰를 ${nx}개까지 받을 수 있어요!`);save(true)}}]:[])}
+function mqTalk(n){const m=MAP,arr=getMQ(m.id),slots=QSLOTS();
  const local=m.npcs.filter(x=>x.role==='trainer'&&!x.hidden&&!x.job.startsWith('fin_'));
  const near=local.length?{t:'🧭 이 근처 스승 정보',f:()=>dialog(n.name,local.map(x=>`⭐ <b>${JD[x.job][0]}</b> 스승 ${esc(x.name)} — 이 지역 <b>${dirText(m,x.x,x.y)}</b> (Lv ${reqLv(x.job)})`).join('<br>'),[])}:null;
- if(q&&q.c>=q.n){const exp=Math.round(need(P.lv)*QUEST_EXP_MQ*(q.boss?1.5:1)),gold=Math.round((m.minLv*30+200)*(q.boss?2:1)),pot=P.lv>=15?'hipot':'potion';
-  dialog(n.name,`수고했네! 이 지역이 조금은 안전해졌어.<br>보상: <b>경험치 ${exp.toLocaleString()}</b> · <b>${gold.toLocaleString()}G</b> · ${CONS[pot].e} ${CONS[pot].n} 2개`,[{t:'🎁 보상 받기',pri:1,f:()=>{delete P.mq[m.id];P.mqDone=P.mqDone||{};P.mqDone[uniOf()]=(P.mqDone[uniOf()]||0)+1;P.gold+=gold;P.items[pot]=(P.items[pot]||0)+2;sfx('coin');toast(`🎁 +${gold.toLocaleString()}G`);gainExp(exp);save(false);setTimeout(()=>mqTalk(n),300)}}].concat(near?[near]:[]));return}
- if(q){dialog(n.name,`아직 의뢰가 남았네.<br>🗺️ <b>${MD[q.k][0]} ${q.n}${q.boss?'번':'마리'} 처치</b> — ${q.c}/${q.n}`,[{t:'다른 의뢰로 바꾸기',f:()=>{P.mq[m.id]=newMapQuest(m);toast('🗺️ 새 의뢰를 받았습니다');save(false)}}].concat(near?[near]:[]));return}
- const nq=newMapQuest(m);
- dialog(n.name,`${m.name}에 온 걸 환영하네. 마침 일손이 필요했지.<br>🗺️ <b>${MD[nq.k][0]} ${nq.n}${nq.boss?'번':'마리'} 처치</b>${nq.boss?' <span class="tag">보스</span>':''}<br><span class="muted">이 지역 의뢰는 마을 이장의 미션과 따로 진행돼요. 끝낼 때마다 새로 받을 수 있어요.</span>`,[{t:'🗺️ 의뢰 수락',pri:1,f:()=>{P.mq[m.id]=nq;toast('🗺️ 의뢰를 받았습니다');save(false)}}].concat(near?[near]:[]));
-}
+ const list=arr.map(q=>`🗺️ <b>${MD[q.k][0]} ${q.n}${q.boss?'번':'마리'} 처치</b>${q.boss?' <span class="tag">보스</span>':''} — ${q.c}/${q.n}`).join('<br>');
+ const opts=[];if(arr.length<slots)opts.push({t:`🗺️ 의뢰 받기 (${arr.length}/${slots})`,pri:1,f:()=>{P.mq[m.id]=arr;arr.push(newMapQuest(m));toast('🗺️ 의뢰를 받았습니다');save(false);setTimeout(()=>mqTalk(n),200)}});
+ if(arr.length)opts.push({t:'의뢰 전부 새로 받기',f:()=>{const k=arr.length;arr.length=0;for(let i=0;i<k;i++)arr.push(newMapQuest(m));toast('🗺️ 의뢰를 새로 받았습니다');save(false)}});if(near)opts.push(near);
+ dialog(n.name,`${arr.length?'지금 맡은 의뢰일세. 끝내는 즉시 보상을 보내 주지.':`${m.name}에 온 걸 환영하네. 마침 일손이 필요했지.`}<br>${list||''}<br><span class="muted">한 번에 ${slots}개까지 받을 수 있어요. 끝내면 다음 의뢰가 자동으로 이어져요.</span>`,opts)}
+
 const RUMORS={poo:'마을 동쪽 초원 구석에서 이상한 냄새를 풍기는 철학자를 봤다는 사람이 있어. 화장실을 자주 들락거리는 사람을 좋아한다나?',
  spi:'성당 안쪽 샘물에서 정령이 속삭인대. 기도를 많이 하고, 망령과 리치를 쓰러뜨린 자를 기다린다더군.',
  vam:'어둠의 숲 동쪽 폐허 근처에 창백한 집사가 서 있다더라. 박쥐 사냥에 이골이 난 사람을 찾는대.',
@@ -2182,19 +2194,12 @@ function newQuest(){
  const c=pick(cand);return {type:'kill',k:c.k,n:RI(8,15),c:0,map:c.map};
 }
 function questText(q){return q.type==='kill'?`${MD[q.k][0]} ${q.n}마리 처치 (${MAPS[q.map].name})`:q.type==='ore'?`${ORES[q.k].n} 광석 ${q.n}개 채광 (깊은 광산)`:`물고기 ${q.n}마리 낚기 (마을 연못·항구)`}
-function chiefTalk(n){
- n.flip=P.x<n.x;const q=P.quest;
- if(q&&q.c>=q.n){
-  const exp=Math.round(need(P.lv)*QUEST_EXP_CHIEF),gold=50+P.lv*25;
-  dialog(n.name,`오오, 해냈구먼! 마을이 한결 평화로워졌네.<br>보상: <b>경험치 ${exp.toLocaleString()}</b>, <b>${gold.toLocaleString()}G</b>, 🧪 물약 2개`,[{t:'🎁 보상 받기',pri:1,f:()=>{P.quest=null;P.qn=(P.qn||0)+1;P.gold+=gold;P.items.potion+=2;toast(`🎁 +${gold}G, 물약 2개`);gainExp(exp);save(true);setTimeout(()=>chiefTalk(n),300)}}]);
- } else if(q){
-  dialog(n.name,`아직 일이 남았네.<br>📜 <b>${questText(q)}</b> — ${q.c}/${q.n}`,[{t:'다른 미션으로 바꾸기',f:()=>{P.quest=newQuest();toast('📜 새 미션을 받았습니다');save(false)}}]);
- } else {
-  const nq=newQuest();
-  const intro=!P.qn?`어서 오게, 젊은이! 나는 이 마을 이장이네. 요즘 마을 동쪽 <b>푸른 초원</b>에 슬라임이 너무 많아졌어. 좀 도와주겠나?<br><span class="muted">미션은 끝낼 때마다 새로 받을 수 있어요. 레벨이 오르면 더 먼 곳의 미션을 줍니다.</span>`:`마침 잘 왔네. 이번 부탁은 이걸세.`;
-  dialog(n.name,`${intro}<br>📜 <b>${questText(nq)}</b>`,[{t:'📜 미션 수락',pri:1,f:()=>{P.quest=nq;toast('📜 미션을 받았습니다');save(false)}}]);
- }
-}
+function chiefTalk(n){n.flip=P.x<n.x;const arr=getCQ(),slots=QSLOTS();
+ const intro=!P.qn&&!arr.length?`어서 오게, 젊은이! 나는 이 마을 이장이네. 요즘 마을 동쪽 <b>푸른 초원</b>에 슬라임이 너무 많아졌어. 좀 도와주겠나?<br>`:arr.length?'맡긴 일은 잘 되어 가나? 끝내는 즉시 보상을 보내 주겠네.<br>':'마침 잘 왔네. 부탁할 일이 있지.<br>';
+ const list=arr.map(q=>`📜 <b>${questText(q)}</b> — ${q.c}/${q.n}`).join('<br>');
+ const opts=[];if(arr.length<slots)opts.push({t:`📜 미션 받기 (${arr.length}/${slots})`,pri:1,f:()=>{arr.push(newQuest());toast('📜 미션을 받았습니다');save(false);setTimeout(()=>chiefTalk(n),200)}});
+ if(arr.length)opts.push({t:'미션 전부 새로 받기',f:()=>{const k=arr.length;arr.length=0;for(let i=0;i<k;i++)arr.push(newQuest());toast('📜 미션을 새로 받았습니다');save(false)}});
+ dialog(n.name,`${intro}${list}<br><span class="muted">한 번에 ${slots}개까지 받을 수 있어요. 끝내면 다음 미션이 자동으로 이어져요.</span>`,opts)}
 /* ================= 스킬 트리 ================= */
 let treeTab=0;
 function openTree(){
