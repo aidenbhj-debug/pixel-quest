@@ -1140,11 +1140,13 @@ function hitMon(m,mult,o={}){
  return d;
 }
 function heal(n,quiet){const a=Math.min(P.S.hp-P.hp,Math.round(n));if(a<=0)return;P.hp+=a;if(!quiet||a>3)ftxt(P.x,P.y-22,'+'+a,'#7dff8a')}
+/* 경험치 배율: 몬스터는 조금, 퀘스트는 많이 */
+const MON_EXP_MUL=.15,BOSS_EXP_MUL=.3,QUEST_EXP_MQ=.8,QUEST_EXP_CHIEF=.9;
 function killMon(m,byPlayer){
  m.hp=0;fx({type:'puff',x:m.x,y:m.y-8,life:.4,col:m.pal.G||m.pal.W||m.pal.O||m.pal.R||'#fff'});
  if(!MAP.raid&&!m.summoned)W.respawn.push({k:m.k,boss:m.boss,t:now()+(m.boss?40:9/SPAWN_MUL),x:m.hx,y:m.hy});
  if(!byPlayer)return;
- const exp=Math.round((6+Math.pow(m.lv,1.5)*2)*(m.boss?12:1)*1.2*(1+.03*(TV('expup')||0)+.01*TV('t_exp')));
+ const exp=Math.max(1,Math.round((6+Math.pow(m.lv,1.5)*2)*(m.boss?12:1)*1.2*(m.boss?BOSS_EXP_MUL:MON_EXP_MUL)*(1+.03*(TV('expup')||0)+.01*TV('t_exp'))));
  const gm=1+.05*(TV('luck')||0)+.04*TV('bounty')+.02*TV('m_gold')+({far:.2,lrd:.5,mst:.4}[P.job]||0);
  const gold=Math.round(m.lv*R(2,4)*(m.boss?25:1)*gm);
  P.gold+=gold;P.st.kills++;sfx(m.boss?'bossKill':'kill');ftxt(m.x,m.y-34,'+'+exp+' EXP','#9be15d');
@@ -2062,7 +2064,7 @@ function newMapQuest(m){const boss=m.boss&&Math.random()<.25;if(boss)return {k:m
 function mqTalk(n){P.mq=P.mq||{};const m=MAP,q=P.mq[m.id];
  const local=m.npcs.filter(x=>x.role==='trainer'&&!x.hidden&&!x.job.startsWith('fin_'));
  const near=local.length?{t:'🧭 이 근처 스승 정보',f:()=>dialog(n.name,local.map(x=>`⭐ <b>${JD[x.job][0]}</b> 스승 ${esc(x.name)} — 이 지역 <b>${dirText(m,x.x,x.y)}</b> (Lv ${reqLv(x.job)})`).join('<br>'),[])}:null;
- if(q&&q.c>=q.n){const exp=Math.round(need(P.lv)*.25*(q.boss?1.6:1)),gold=Math.round((m.minLv*30+200)*(q.boss?2:1)),pot=P.lv>=15?'hipot':'potion';
+ if(q&&q.c>=q.n){const exp=Math.round(need(P.lv)*QUEST_EXP_MQ*(q.boss?1.5:1)),gold=Math.round((m.minLv*30+200)*(q.boss?2:1)),pot=P.lv>=15?'hipot':'potion';
   dialog(n.name,`수고했네! 이 지역이 조금은 안전해졌어.<br>보상: <b>경험치 ${exp.toLocaleString()}</b> · <b>${gold.toLocaleString()}G</b> · ${CONS[pot].e} ${CONS[pot].n} 2개`,[{t:'🎁 보상 받기',pri:1,f:()=>{delete P.mq[m.id];P.mqDone=P.mqDone||{};P.mqDone[uniOf()]=(P.mqDone[uniOf()]||0)+1;P.gold+=gold;P.items[pot]=(P.items[pot]||0)+2;sfx('coin');toast(`🎁 +${gold.toLocaleString()}G`);gainExp(exp);save(false);setTimeout(()=>mqTalk(n),300)}}].concat(near?[near]:[]));return}
  if(q){dialog(n.name,`아직 의뢰가 남았네.<br>🗺️ <b>${MD[q.k][0]} ${q.n}${q.boss?'번':'마리'} 처치</b> — ${q.c}/${q.n}`,[{t:'다른 의뢰로 바꾸기',f:()=>{P.mq[m.id]=newMapQuest(m);toast('🗺️ 새 의뢰를 받았습니다');save(false)}}].concat(near?[near]:[]));return}
  const nq=newMapQuest(m);
@@ -2174,7 +2176,7 @@ function questText(q){return q.type==='kill'?`${MD[q.k][0]} ${q.n}마리 처치 
 function chiefTalk(n){
  n.flip=P.x<n.x;const q=P.quest;
  if(q&&q.c>=q.n){
-  const exp=Math.round(need(P.lv)*.35),gold=50+P.lv*25;
+  const exp=Math.round(need(P.lv)*QUEST_EXP_CHIEF),gold=50+P.lv*25;
   dialog(n.name,`오오, 해냈구먼! 마을이 한결 평화로워졌네.<br>보상: <b>경험치 ${exp.toLocaleString()}</b>, <b>${gold.toLocaleString()}G</b>, 🧪 물약 2개`,[{t:'🎁 보상 받기',pri:1,f:()=>{P.quest=null;P.qn=(P.qn||0)+1;P.gold+=gold;P.items.potion+=2;toast(`🎁 +${gold}G, 물약 2개`);gainExp(exp);save(true);setTimeout(()=>chiefTalk(n),300)}}]);
  } else if(q){
   dialog(n.name,`아직 일이 남았네.<br>📜 <b>${questText(q)}</b> — ${q.c}/${q.n}`,[{t:'다른 미션으로 바꾸기',f:()=>{P.quest=newQuest();toast('📜 새 미션을 받았습니다');save(false)}}]);
