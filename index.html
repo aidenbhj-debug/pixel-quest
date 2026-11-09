@@ -1128,9 +1128,9 @@ function hitMon(m,mult,o={}){
  let atk=P.S.atk;if(P.job==='ber'){atk*=1+(1-P.hp/P.S.hp)*.6}
  const T=(TEC||buildTE());if(o.basic)mult*=BASIC_MUL;const crit=o.crit||(!o.minion&&Math.random()*100<P.S.crit);const cm=(P.job==='gam'?2.4:1.6)+.02*(T.cdmg||0)+.008*(T.t_crit||0);
  let bonus=(m.vulnT>now()?1.5:1)*(1+(m.boss?.015*(T.boss||0)+.005*(T.m_boss||0):0)+(m.hp>=m.max?.02*(T.first||0):0)+(m.hp<m.max*.3?.02*(T.exec||0):0)+(o.proj?.015*(T.proj||0):0));
- let d=atk*mult*bonus*R(.9,1.1)*(crit?cm:1)-m.def*.5*(1-Math.min(.6,.015*(T.pen||0)));d=Math.max(1,Math.round(d));
+ let d=atk*mult*bonus*R(.9,1.1)*(crit?cm:1)-m.def*.5*(1-Math.min(.6,.015*(T.pen||0)));const EMU=elemMul(o,m);d=Math.max(1,Math.round(d*EMU.k));
  m.hp-=d;m.flash=.12;m.aggro=8;sfx(crit?'crit':'hit');if(m.mid&&W.raid)W.raid.my[m.mid]=(W.raid.my[m.mid]||0)+d;
- ftxt(m.x,m.y-16*m.sc-2,d,crit?'#ffd23a':'#ffffff',crit);
+ ftxt(m.x,m.y-16*m.sc-2,d,crit?'#ffd23a':EMU.base>=1.5?'#ffe14a':'#ffffff',crit);elemAfter(m,d,o,EMU);
  if(o.burn||o.poison)m.dot={dps:P.S.atk*.12*(1+.08*(T.dot||0)),t:3,col:o.poison?'#9be15d':'#ff8a3a'};
  if(o.freeze&&Math.random()<o.freeze){m.slow=2.5;ftxt(m.x,m.y-24,'❄','#9fd8ff')}
  if(o.slow)m.slow=3;
@@ -1160,7 +1160,7 @@ function killMon(m,byPlayer){
  if(!MAP.raid&&(m.boss||Math.random()<.09*dm)){const at=pick(Object.keys(ATYPE).filter(x=>x!=='cloth'));drop({w:makeArmor(m.boss&&Math.random()<.6?(ARCH_A[J().arch]==='cloth'?at:ARCH_A[J().arch]):at,m.lv,rollRar(m.boss,m.lv,rl))})}
  if(!MAP.raid&&(m.boss||Math.random()<.11*dm)){const types=Object.keys(WTYPE).filter(x=>x!=='stick');const ty=MON_W[m.k]&&Math.random()<.6?MON_W[m.k]:pick(types);drop({w:makeWeapon(ty,m.lv,rollRar(m.boss,m.lv,rl))});
   if(m.boss&&Math.random()<.5){const own=ARCH_W[J().arch]||types;drop({w:makeWeapon(pick(own.filter(x=>x!=='stick').length?own.filter(x=>x!=='stick'):types),m.lv,rollRar(true,m.lv,rl))})}}
- P.kc[m.k]=(P.kc[m.k]||0)+1;uniDrops(m);
+ P.kc[m.k]=(P.kc[m.k]||0)+1;if(byPlayer)orbDrop(m);uniDrops(m);
  mqProgress(MAP.id,m.k);
  if((MAP.id==='divine'||MAP.id==='p_divine')&&P.job==='god'){P.relic=P.relic||{};if(m.boss&&m.k==='fallenGod'&&Math.random()<.01){P.relic.gem=(P.relic.gem||0)+1;toast('💎 선함이 깃든 보석을 얻었다!');sfx('rare')}if(!m.boss&&!m.summoned&&Math.random()<.01){P.relic.key=(P.relic.key||0)+1;toast('🗝️ 던전 열쇠를 얻었다!');sfx('rare')}}
  questProgress('kill',m.k,1);
@@ -1180,7 +1180,7 @@ function hurt(dmg,src,pen=0){
  if(P.dead||P.inv>now())return;
  if(Math.random()*100<P.S.dodge){ftxt(P.x,P.y-22,'MISS','#cccccc');return}
  const raw=dmg*R(.9,1.1);const ed=P.S.def*(1-pen);let d=raw*(1-ed/(ed+raw*2));if(P.job==='shd')d*=.8;d=Math.max(1,Math.round(d));
- if(P.buffs.some(b=>b.eter))d*=.5;
+ if(P.buffs.some(b=>b.eter))d*=.5;d*=elemResist(src);
  d=Math.max(1,Math.round(d*(1-Math.min(.5,.01*(TV('block')||0)))*(src?1:1-Math.min(.5,.01*TV('resist')))));
  if(src&&src.hp>0&&TV('thorns')){const rf=Math.max(1,Math.round(d*Math.min(1,.03*TV('thorns'))));src.hp-=rf;ftxt(src.x,src.y-16*src.sc,rf,'#c8c0a0');if(src.hp<=0)killMon(src,true)}
  if(P.shield&&P.shield.until>now()&&P.shield.v>0){const ab=Math.min(P.shield.v,d);P.shield.v-=ab;d-=ab;ftxt(P.x,P.y-28,'🛡'+ab,'#9fd8ff');if(d<=0)return}
@@ -1784,7 +1784,7 @@ function dialog(who,say,opts){DLG=opts||[];const d=$('#dialog');d.innerHTML=`<di
 function closeDialog(){$('#dialog').classList.remove('on')}
 function talk(n){
  n.flip=P.x<n.x;
- if(n.role==='trainer')return trainerTalk(n);if(n.role==='raid')return openRaid();if(n.role==='gogkeeper')return gogTalk(n);if(n.role==='jondu')return jonduTalk(n);if(n.role==='qbroker')return qbrokerTalk(n);if(n.role==='mquest')return mqTalk(n);if(n.role==='info')return infoTalk(n);if(n.role==='ship')return shipTalk(n);if(n.role==='guide1'||n.role==='guide2')return guideTalk(n);if(n.role==='dimpriest')return dimPriest(n);if(n.role==='prguide')return priGuide(n);if(n.role==='prrumor')return priRumor(n);if(n.role==='wshop')return dialog(n.name,'좋은 무기는 목숨을 지켜주지. 몬스터가 떨군 무기도 내가 사주마.',[{t:'⚔️ 무기 사기·팔기',pri:1,f:()=>openGear('w','buy')}]);if(n.role==='ashop')return dialog(n.name,'갑옷 없이 사냥터에 나가는 건 바보짓이야. 쓰던 갑옷도 팔고 가.',[{t:'🛡️ 갑옷 사기·팔기',pri:1,f:()=>openGear('a','buy')}]);if(n.role==='chief')return chiefTalk(n);
+ if(n.role==='trainer')return trainerTalk(n);if(n.role==='raid')return openRaid();if(n.role==='gogkeeper')return gogTalk(n);if(n.role==='jondu')return jonduTalk(n);if(n.role==='qbroker')return qbrokerTalk(n);if(n.role==='msmith')return msmithTalk(n);if(n.role==='mshop')return mshopTalk(n);if(n.role==='mquest')return mqTalk(n);if(n.role==='info')return infoTalk(n);if(n.role==='ship')return shipTalk(n);if(n.role==='guide1'||n.role==='guide2')return guideTalk(n);if(n.role==='dimpriest')return dimPriest(n);if(n.role==='prguide')return priGuide(n);if(n.role==='prrumor')return priRumor(n);if(n.role==='wshop')return dialog(n.name,'좋은 무기는 목숨을 지켜주지. 몬스터가 떨군 무기도 내가 사주마.',[{t:'⚔️ 무기 사기·팔기',pri:1,f:()=>openGear('w','buy')}]);if(n.role==='ashop')return dialog(n.name,'갑옷 없이 사냥터에 나가는 건 바보짓이야. 쓰던 갑옷도 팔고 가.',[{t:'🛡️ 갑옷 사기·팔기',pri:1,f:()=>openGear('a','buy')}]);if(n.role==='chief')return chiefTalk(n);
  switch(n.role){
    case 'shop':dialog(n.name,'어서 오세요! 물약이 필요하시죠?',[{t:'🏪 상점 열기',pri:1,f:openShop}]);break;
   case 'smith':dialog(n.name,'광석만 가져오면 장비를 단단하게 강화해주지. 광석도 사들이고 있다네.',[{t:'🔨 강화·판매',pri:1,f:openSmith}]);break;
@@ -1992,7 +1992,7 @@ function importChar(){
   if(DB&&UID)DB.doc(`data/users/${UID}/char${i}`).set({save:JSON.stringify(v),at:Date.now()}).catch(()=>{});
   toast(`📥 ${v.nick} (Lv ${v.lv})을(를) ${i+1}번 칸에 가져왔어요. 캐릭터 선택에서 고르세요`);closeLayer()}})}
 function openStory(){P.story=P.story||{};const L=storyList();openLayer(`${head('📜 이야기')}<p class="muted">각 사냥터에 처음 들어갈 때 그곳의 이야기가 펼쳐집니다.</p><div class="row"><div class="f"><b>자동으로 펼치기</b><span class="muted">끄면 화면에 뜨지 않고 목록에만 쌓여요</span></div><button class="btn ${P.storyOff?'':'pri'}" id="sttog">${P.storyOff?'꺼짐':'켜짐'}</button></div>${L.map((c,i)=>P.story[c.id]?`<div class="row"><div class="f"><b>${esc(c.t)}</b><span class="muted">${esc(c.sub||'')}</span></div><button class="btn" data-st="${i}">보기</button></div>`:`<div class="row" style="opacity:.45"><div class="f"><b>???</b><span class="muted">아직 열리지 않은 이야기</span></div></div>`).join('')}`,root=>{root.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>showStory(L[+b.dataset.st],false));root.querySelector('#sttog').onclick=()=>{P.storyOff=!P.storyOff;save(false);openStory()}})}
-function promote(id){sfx('fanfare');setTimeout(storyCheck,1500);const n=JOB(id);if(n.tier===1){dropJobSkills();P.hist=[id]}else P.hist.push(id);P.job=id;calc();P.hp=P.S.hp;P.mp=P.S.mp;P.cd={};buildActs();toast(`⭐ ${n.name}(으)로 전직했습니다! 스승에게 스킬을 배울 수 있어요`);sysChat(`${P.nick}님이 ${n.name}(으)로 전직했습니다!`);fx({type:'ring',x:P.x,y:P.y-8,r:40,life:1,col:'#ffd84a',w:3});netPresence(true);pushBoard(true);save(true)}
+function promote(id){sfx('fanfare');setTimeout(elemCheck,1400);setTimeout(storyCheck,1500);const n=JOB(id);if(n.tier===1){dropJobSkills();P.hist=[id]}else P.hist.push(id);P.job=id;calc();P.hp=P.S.hp;P.mp=P.S.mp;P.cd={};buildActs();toast(`⭐ ${n.name}(으)로 전직했습니다! 스승에게 스킬을 배울 수 있어요`);sysChat(`${P.nick}님이 ${n.name}(으)로 전직했습니다!`);fx({type:'ring',x:P.x,y:P.y-8,r:40,life:1,col:'#ffd84a',w:3});netPresence(true);pushBoard(true);save(true)}
 function chainHtml(root){
  const rows=[];const walk=(id,d)=>{(rows[d]=rows[d]||new Set()).add(id);for(const n of JD[id][4])if((n!=='gog'&&!n.startsWith('fin_'))||(P&&P.hist.includes(n)))walk(n,d+1)};walk(root,0);
  return rows.map(r=>`<div class="chain">${[...r].map(id=>{const j=JOB(id);const cur=P&&P.job===id,done=P&&P.hist.includes(id);return `<span class="${cur?'cur':''} ${j.hid?'hid':''}">${done&&!cur?'✓ ':''}${j.name}${j.hid&&j.tier>1?' (히든)':''}</span>`}).join('<b>/</b>')}</div>`).join('<div class="muted" style="padding-left:8px">↓</div>');
@@ -2023,11 +2023,11 @@ const KIND_KO={genesis:'화면 전체 소멸',eternity:'영원한 신체',onenes
 function skDesc(s0){const s={...s0,m:+(s0.m*SKMUL(s0.kind)).toFixed(2)};const o=s.o||{};let e=s.kind==='genesis'?`반경 ${o.r} 모든 적 ×${s.m} 확정 치명타 · HP/MP 완전 회복 · 5초 무적`:s.kind==='eternity'?`${o.dur}초 동안 공격 +200% · 방어 +150% · 이동 +50% · 받는 피해 -50% · 쿨타임 즉시 초기화`:s.kind==='oneness'?`반경 ${o.r} 일반 몬스터 즉사 · 보스는 최대 체력 ${Math.round(o.pct*100)}% 고정 피해`:s.kind==='timestop'?`모든 적 ${o.dur||6}초 정지(보스 4초) · 받는 피해 +50% · 2초 무적`:s.kind==='creation'?`반경 ${o.r} 모든 적 ×${s.m} · HP/MP 완전 회복 · 상태 이상 해제`:s.kind==='judgment'?`반경 ${o.r} 모든 적 ${o.hits}연타 ×${s.m} + 최대 체력 ${Math.round(o.pct*100)}% (보스 1/3)`:s.kind==='barrier'?`최대 HP ${Math.round(s.m*100)}% 보호막 ${o.dur||8}초`:s.kind==='blink'?`뒤로 순간이동 + 회피 +${o.dodge||30}% ${o.dur||3}초`:s.kind==='aura'?`${KIND_KO.aura} ×${s.m} (0.5초마다) ${o.dur||8}초`:s.kind==='orbit'?`구체 ${o.n||4}개 ×${s.m} ${o.dur||8}초`:s.kind==='trap'?`밟으면 폭발 ×${s.m}`:s.kind==='chain'?`${o.n||3}명에게 튀는 번개 ×${s.m}`:s.kind==='heal'?`HP ${Math.round(s.m*100)}% 회복`:s.kind==='regen'?`초당 HP ${Math.round(s.m*100)}% 회복 ${o.dur||8}초`:s.kind==='buff'?[o.atk?`공격 ${o.atk>0?'+':''}${Math.round(o.atk*100)}%`:'',o.def?`방어 ${o.def>0?'+':''}${Math.round(o.def*100)}%`:'',o.dodge?`회피 +${o.dodge}%`:'',o.spd?`이동 +${Math.round(o.spd*100)}%`:'',o.crit?`치명 +${o.crit}%`:'',o.drain?`흡혈 ${Math.round(o.drain*100)}%`:'',o.gold?'골드 강탈':''].filter(Boolean).join(' ')+` ${o.dur||8}초`:s.kind==='summon'?`소환수 ${o.n||1}마리 ${o.dur||15}초`:`${KIND_KO[s.kind]} ×${s.m}`;
  return `${e} · MP ${P&&P.S?mpOf(s):s.mp*3} · 쿨 ${s.cd}초`}
 function openLearn(src,npc){
- const list=Object.values(SKILLS).filter(s=>s.src===src).sort((a,b)=>a.lv-b.lv);
+ const list=learnList(src);
  const mine=src==='common'||P.hist.includes(src)||['god','gog'].includes(P.job);
  openLayer(`${head('📖 '+esc(npc))}<p>${src==='common'?'누구나 배울 수 있는 기본 스킬':`<b>${JD[src][0]}</b> 전용 스킬`} · 소지금 <span class="num">${P.gold.toLocaleString()}G</span></p>
  ${!mine?`<p class="muted">${JD[src][0]}의 길을 걷는 자에게만 가르칠 수 있습니다.</p>`:''}
- ${list.map(s=>{const has=P.skills.includes(s.id),lvOk=P.lv>=s.lv,gOk=P.gold>=s.cost;return `<div class="row"><div class="f"><b>${KIND_EM[s.kind]} ${s.name}</b><span class="muted">${skDesc(s)}<br>필요 Lv ${s.lv} · ${s.cost?s.cost.toLocaleString()+'G':'무료'}</span></div>
+ ${list.map(s=>{const has=P.skills.includes(s.id),lvOk=P.lv>=s.lv,gOk=P.gold>=s.cost;return `<div class="row"><div class="f"><b>${KIND_EM[s.kind]} ${elemBadge(s.o&&s.o.el)} ${s.name}</b><span class="muted">${skDesc(s)}<br>필요 Lv ${s.lv} · ${s.cost?s.cost.toLocaleString()+'G':'무료'}</span></div>
  ${has?'<span class="tag">배움</span>':`<button class="btn ${mine&&lvOk&&gOk?'pri':''}" data-learn="${s.id}" ${mine&&lvOk&&gOk?'':'disabled'}>${!lvOk?`Lv ${s.lv}`:!gOk?'골드 부족':'배우기'}</button>`}</div>`}).join('')}`,
  root=>root.querySelectorAll('[data-learn]').forEach(b=>b.onclick=()=>{const s=SKILLS[b.dataset.learn];if(P.skills.includes(s.id)||P.gold<s.cost||P.lv<s.lv)return;P.gold-=s.cost;P.skills.push(s.id);if(P.bar.length<5){P.bar.push(s.id);buildActs()}toast(`📖 [${s.name}] 스킬을 배웠습니다!${P.bar.length>=5&&!P.bar.includes(s.id)?' (⭐ 메뉴에서 장착)':''}`);save(true);openLearn(src,npc)}));
 }
@@ -2252,7 +2252,7 @@ function openBag(){
  else if(U.tab==='c'){body=Object.entries(CONS).map(([k,c])=>`<div class="row"><div class="f"><b>${c.e} ${c.n} ×${P.items[k]||0}</b></div><button class="btn" data-use="${k}" ${P.items[k]?'':'disabled'}>사용</button></div>`).join('')+
   `<h3>물고기 ${cook>1?`<span class="tag">요리 ×${cook}</span>`:''}</h3>${Object.keys(P.fish).filter(k=>P.fish[k]).map(k=>`<div class="row"><div class="f"><b>🐟 ${FISH[k].n} ×${P.fish[k]}</b><span class="muted">먹으면 HP ${Math.round(FISH[k].heal*cook*100)}% 회복</span></div><button class="btn" data-eat="${k}">먹기</button></div>`).join('')||'<p class="muted">마을 연못에서 낚시를 해보세요.</p>'}`}
  else if(U.tab==='m'){body=`<h3>전리품</h3>${lootRows()}<h3>광석</h3>${Object.keys(ORES).filter(k=>P.ores[k]).map(k=>`<div class="row"><div class="f"><b><span style="color:${ORES[k].c}">◆</span> ${ORES[k].n} ×${P.ores[k]}</b><span class="muted">대장간 강화 재료 · 개당 ${ORES[k].v}G</span></div></div>`).join('')||'<p class="muted">북쪽 광산에서 광석을 캐보세요.</p>'}`}
- else if(U.tab==='s'){const rr=relicRows();body=(rr||'<p class="muted">아직 특수 아이템이 없습니다.</p>')+`<h3>도구</h3><div class="row"><div class="f"><b>⛏️ ${PICKS[P.pick]}</b><span class="muted">${Object.values(ORES).filter(o=>o.t<=P.pick).map(o=>o.n).join('·')} 채광 가능</span></div></div>`}
+ else if(U.tab==='s'){const rr=relicRows()+orbRows();body=(rr||'<p class="muted">아직 특수 아이템이 없습니다.</p>')+`<h3>도구</h3><div class="row"><div class="f"><b>⛏️ ${PICKS[P.pick]}</b><span class="muted">${Object.values(ORES).filter(o=>o.t<=P.pick).map(o=>o.n).join('·')} 채광 가능</span></div></div>`}
  else{body=`<div class="grid2" style="text-align:center"><div><b class="num">${Math.round(S.atk).toLocaleString()}</b><div class="muted">공격</div></div><div><b class="num">${Math.round(S.def).toLocaleString()}</b><div class="muted">방어</div></div><div><b class="num">${S.hp.toLocaleString()}</b><div class="muted">최대 HP</div></div><div><b class="num">${S.mp.toLocaleString()}</b><div class="muted">최대 MP</div></div><div><b class="num">${S.crit}%</b><div class="muted">치명타</div></div><div><b class="num">${S.dodge}%</b><div class="muted">회피</div></div></div>`}
  openLayer(`${head('🎒 가방')}<p class="muted">장비 ${P.bag.length}/${BAGMAX} · 💰 ${P.gold.toLocaleString()}G</p><div class="tabs">${tabs.map(([k,n])=>`<button class="btn ${U.tab===k?'on':''}" data-btab="${k}">${n}</button>`).join('')}</div>${body}`,
  root=>{bindItems(root,openBag);const ub=root.querySelector('#unibtn');if(ub)ub.onclick=openUniverse;
@@ -2490,7 +2490,7 @@ function openCreate(slot){
 function showUI(on){for(const id of ['#hud','#top','#acts','#joyhint','#mini'])$(id).hidden=!on;placeMini()}
 function startGame(c){
  if(c.slot==null){c.slot=Math.max(0,SLOTS.findIndex(x=>!x))}
- P=c;claimSlot();P.fx=1;P.fy=0;P.buffs=[];P.cd={};P.dead=false;P.task=null;P.shield=null;for(const k of ['acd','atkT','inv','lastHurt','undT','prayT','gateT','flash'])P[k]=0;P.st=Object.assign({kills:0,ores:0,uses:0,dragon:0,bosses:0,deaths:0},P.st);P.kc=P.kc||{};P.toilet=P.toilet||0;P.pray=P.pray||0;
+ P=c;claimSlot();setTimeout(elemCheck,3000);P.fx=1;P.fy=0;P.buffs=[];P.cd={};P.dead=false;P.task=null;P.shield=null;for(const k of ['acd','atkT','inv','lastHurt','undT','prayT','gateT','flash'])P[k]=0;P.st=Object.assign({kills:0,ores:0,uses:0,dragon:0,bosses:0,deaths:0},P.st);P.kc=P.kc||{};P.toilet=P.toilet||0;P.pray=P.pray||0;
  if(!JD[P.job]){P.job='none';P.hist=['none']}
  if(!P.loot)P.loot={};if(!P.bag)P.bag=[];if(!P.bag.some(i=>(i.slot||'w')==='w')){const st=makeWeapon('stick',1,0);st.enh=P.wpn||0;P.bag.unshift(st);P.weq=st.uid}if(!P.bag.find(i=>i.uid===P.weq&&(i.slot||'w')==='w'))P.weq=P.bag.find(i=>(i.slot||'w')==='w').uid;
  if(!P.bag.some(i=>i.slot==='a')){const ar=makeArmor('cloth',1,0);ar.enh=P.arm||0;P.bag.push(ar);P.aeq=ar.uid}if(!P.bag.find(i=>i.uid===P.aeq&&i.slot==='a'))P.aeq=P.bag.find(i=>i.slot==='a').uid;
@@ -2790,17 +2790,88 @@ function openDex(id){
  const rarNote=`일반 몬스터: 무기 ${Math.round(11)}% · 갑옷 9% · 전리품 45%${maxLv>=2000?` · 🩵 초월 등급 가능`:''}${maxLv>=3000?` · 🤍 태초 등급 가능`:''}`;
  const icon=k=>`<canvas width="16" height="16" data-mon="${k}" style="width:36px;height:36px;image-rendering:pixelated;flex:none"></canvas>`;
  const wname=k=>MON_W[k]&&WTYPE[MON_W[k]]?WTYPE[MON_W[k]].n:'무작위';
- const monRows=kinds.map(x=>{const sp=specialDropsOf(m,x.k,false);return `<div class="row">${icon(x.k)}<div class="f"><b>${MD[x.k][0]} <span class="muted">Lv ${x.lo}~${x.hi}</span></b><span class="muted">📦 ${LOOT[x.k]||'-'} · ⚔️ 잘 떨구는 무기: ${wname(x.k)}${sp.length?' · '+sp.join(' · '):''}</span></div></div>`}).join('');
+ const monRows=kinds.map(x=>{const sp=specialDropsOf(m,x.k,false);return `<div class="row">${icon(x.k)}<div class="f"><b>${elemTag(x.k)}${MD[x.k][0]} <span class="muted">Lv ${x.lo}~${x.hi}</span></b><span class="muted">📦 ${LOOT[x.k]||'-'} · ⚔️ 잘 떨구는 무기: ${wname(x.k)}${sp.length?' · '+sp.join(' · '):''}</span></div></div>`}).join('');
  let bossRow='';if(m.boss){const b=m.boss,sk=(BOSS_SK[b.k]||[]).map(x=>x[0]);const sp=specialDropsOf(m,b.k,true);
-  bossRow=`<h3>👑 보스</h3><div class="row">${icon(b.k)}<div class="f"><b>${MD[b.k][0]} <span class="muted">Lv ${b.lv} · 40초마다 재등장</span></b><span class="muted">스킬: ${sk.join(', ')||'내려찍기'}<br>드롭: 장비 확정 (희귀~전설${b.lv>=2000?' · 초월':''}${b.lv>=3000?' · 태초':''}) · 📦 ${LOOT[b.k]||'-'} ×3 · ⚔️ ${wname(b.k)}${sp.length?'<br>✨ '+sp.join(' · '):''}</span></div></div>`}
+  bossRow=`<h3>👑 보스</h3><div class="row">${icon(b.k)}<div class="f"><b>${elemTag(b.k)}${MD[b.k][0]} <span class="muted">Lv ${b.lv} · 40초마다 재등장</span></b><span class="muted">스킬: ${sk.join(', ')||'내려찍기'}<br>드롭: 장비 확정 (희귀~전설${b.lv>=2000?' · 초월':''}${b.lv>=3000?' · 태초':''}) · 📦 ${LOOT[b.k]||'-'} ×3 · ⚔️ ${wname(b.k)}${sp.length?'<br>✨ '+sp.join(' · '):''}</span></div></div>`}
  const ores=m.ores&&m.ores.length?`<h3>⛏️ 광석</h3><p class="muted">${[...new Set(m.ores.map(o=>o.type))].map(t=>`<span style="color:${ORES[t].c}">◆</span> ${ORES[t].n}`).join(' · ')}</p>`:'';
  openLayer(`${head('📖 지역 도감')}<div class="row"><div class="f"><b>${esc(m.name)}</b><span class="muted">${UNI_NAMES[u]||''} · 입장 Lv ${m.minLv||1}</span></div><select id="dexsel" style="font:inherit;padding:6px;max-width:55%;border:2px solid var(--line);background:var(--surface2);color:var(--ink)">${list.map(x=>`<option value="${x.id}" ${x.id===m.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
  <h3>🐾 몬스터 (${kinds.length}종)</h3>${monRows||'<p class="muted">몬스터가 없는 안전 지역입니다.</p>'}${bossRow}${ores}<p class="muted" style="margin-top:8px">${rarNote}</p>`,
  root=>{root.querySelector('#dexsel').onchange=e=>openDex(e.target.value);paintMinis(root)});
 }
+/* ===================== 속성 시스템 ===================== */
+const ELEM={fire:{n:'불',e:'🔥',c:'#ff7a3a'},water:{n:'물',e:'💧',c:'#4aa8ff'},wind:{n:'바람',e:'🌪️',c:'#8ae8b0'},earth:{n:'땅',e:'🪨',c:'#c8a060'},light:{n:'빛',e:'✨',c:'#fff3a0'},dark:{n:'어둠',e:'🌑',c:'#b06aff'},none:{n:'무',e:'⚪',c:'#d0d0d0'},primal:{n:'태초',e:'🌈',c:'#ffffff'}};
+const ELEM6=['fire','water','wind','earth','light','dark'];
+const ECYC={fire:'wind',wind:'earth',earth:'water',water:'fire'};
+function elemMulOf(a,d){if(!a||a==='none'||!d||d==='none'||d==='primal')return 1;if(a==='primal')return 1.2;if(a===d)return .8;if(ECYC[a]===d)return 1.5;if(ECYC[d]===a)return .7;if((a==='light'&&d==='dark')||(a==='dark'&&d==='light'))return 1.5;return 1}
+const MON_ELEM={};
+(function(){const set=(e,ks)=>ks.split(' ').forEach(k=>MON_ELEM[k]=e);
+ set('fire','fireImp salamander ifrit drake magma dragon dknight lavaCrab magmaScorp phoenix');
+ set('water','bogSlime lizard hydra kraken crab iceWolf yeti frostGolem frostGiant frostTreant');
+ set('wind','harpy stormElem skyKnight mosquito wyvern bat');
+ set('earth','golem golemKing titan troll gargoyle scorpion treant spider shroom poisonShroom viper orc chaosGolem titanGuard wolfKing');
+ set('light','seraph godSoldier valkyrie skyEmperor');
+ set('dark','demon demonKing ghost skeleton lich darkKnight shadowFiend voidHorror abyssWyrm abyssLord chaosSpirit chaosTitan fallenGod endDragon voidEye watcher mirrorKnight gshaman');
+ set('primal','godOfGods priLord')})();
+const CLONE_BASE={};
+{const _ck=cloneKind;cloneKind=function(base,key,...a){CLONE_BASE[key]=base;return _ck(base,key,...a)}}
+function monElem(k){let b=k;for(let i=0;i<4&&b;i++){if(MON_ELEM[b])return MON_ELEM[b];b=CLONE_BASE[b]}return 'none'}
+const MAGIC_LINE=['app','amg','ult','wit','nec','dru','sha','alc','fin_mag','fin_nec','fin_dru','fin_sha','fin_alc'];
+const JOB_ELEM={};
+(function(){const set=(e,ks)=>ks.split(' ').forEach(k=>JOB_ELEM[k]=e);
+ set('light','hel med cle prs pop bis pri ang arA atn fin_med fin_pop fin_bis fin_pri');
+ set('dark','dem dkl fal vam cnt fin_cnt');
+ set('water','sai cap adm mer fsh pos fis wen fin_adm fin_pos fin_fis fin_wen');
+ set('wind','arc gun mas snp arw con gam bur pkp thf asn mst brd sop fin_bow fin_arw fin_rog fin_brd fin_sop');
+ set('earth','swd spr knt gen cav cru sm shd min vmn msn gia dwf dino far lrd poo fin_sw fin_shd fin_vmn fin_msn fin_gia fin_dwf fin_dino fin_lrd fin_poo');
+ set('fire','ber pwa cook chef fin_ber fin_chef')})();
+// 속성 스킬 세트 (마법 계열이 고른 속성만 배움)
+const ELEM_SK={fire:[['작열탄','bolt',2.4,3,10,{burn:1}],['불기둥','meteor',2.0,8,22,{r:40,burn:1,n:2}],['메테오','meteor',4.2,16,40,{r:70,burn:1,n:1}]],
+ water:[['물의 창','bolt',2.3,3,10,{slow:1}],['해일','nova',2.0,8,22,{r:60,slow:1}],['대해일','nova',3.8,16,40,{r:110,slow:1}]],
+ wind:[['바람 칼날','multi',1.0,3,10,{n:3}],['회오리','vortex',1.7,8,22,{r:60}],['폭풍의 눈','chain',1.9,16,40,{n:8}]],
+ earth:[['바위 투척','bolt',2.6,3,10,{stun:.5}],['지진','nova',2.1,8,22,{r:70,stun:.5}],['대지의 분노','meteor',3.6,16,40,{r:60,n:3,stun:.6}]],
+ light:[['빛의 화살','bolt',2.3,3,10,{}],['성광 폭발','nova',2.2,8,22,{r:70}],['심판의 빛','rain',2.4,16,40,{n:8}]],
+ dark:[['어둠 구체','bolt',2.3,3,10,{drain:.03}],['저주의 늪','vortex',1.8,8,22,{r:60}],['심연의 문','vortex',3.6,16,40,{r:90}]]};
+for(const e of ELEM6)ELEM_SK[e].forEach((d,i)=>{const id=`el_${e}:${i}`,lv=[8,25,60][i];SKILLS[id]={id,name:d[0],kind:d[1],m:d[2],cd:d[3],mp:d[4],o:{...d[5]},lv,cost:Math.round(30*Math.pow(lv,1.3)*1.5),src:'el_'+e,el:e}});
+for(const k in SKILLS){const s_=SKILLS[k];const el=s_.el||(MAGIC_LINE.includes(s_.src)||s_.src==='ele'?'none':JOB_ELEM[s_.src])||'none';s_.o={...(s_.o||{}),el}}
+function elemBadge(e){return e&&e!=='none'&&ELEM[e]?`<span style="color:${ELEM[e].c};text-shadow:0 0 2px #000">${ELEM[e].e}</span>`:''}
+function elemTag(k){const e=monElem(k);return e!=='none'?elemBadge(e)+' ':''}
+function playerAtkElem(o){if(['god','gog'].includes(P.job))return 'primal';if(o.basic){const w=P.bag.find(i=>i.uid===P.weq);return (w&&w.el)||'none'}return o.el||'none'}
+function elemMul(o,m){const a=playerAtkElem(o),d=monElem(m.k);let k=elemMulOf(a,d);if(P.elem&&P.elem!=='all'&&a===P.elem)k*=1.2;return {a,k,base:elemMulOf(a,d)}}
+function elemAfter(m,d,o,E){if(E.base>=1.5)ftxt(m.x,m.y-16*m.sc-14,'효과적!','#ffe14a');else if(E.base<1&&E.a!==monElem(m.k))ftxt(m.x,m.y-16*m.sc-14,'저항','#a8a8a8');
+ const a=E.a;if(!a||a==='none'||a==='primal'||m.hp<=0)return;if(o.basic&&Math.random()>.25)return;
+ if(a==='fire'&&!o.burn)m.dot={dps:P.S.atk*.08,t:3,col:'#ff8a3a'};else if(a==='water')m.slow=Math.max(m.slow||0,2);
+ else if(a==='wind'){const dx=m.x-P.x,dy=m.y-P.y,l=Math.hypot(dx,dy)||1;if(!m.boss&&!blocked(MAP,m.x+dx/l*8,m.y+dy/l*8,5)){m.x+=dx/l*8;m.y+=dy/l*8}}
+ else if(a==='earth'&&!m.boss)m.stun=Math.max(m.stun||0,.5);else if(a==='light'||a==='dark')heal(Math.min(d*.03,P.S.hp*.02),true)}
+function elemResist(src){if(!src||!src.k)return 1;const e=monElem(src.k);if(e==='none')return 1;let k=1;const ar=P.bag.find(i=>i.uid===P.aeq);if(ar&&ar.el===e)k*=.8;if(P.elem===e)k*=.8;return k}
+// 속성 구슬 드롭 (0.1%, 스킬 트리 영향 없음)
+function orbDrop(m){const e=monElem(m.k);if(!ELEM6.includes(e)||Math.random()>=.001)return;P.orbs=P.orbs||{};P.orbs[e]=(P.orbs[e]||0)+1;sfx('rare');toast(`${ELEM[e].e} ${ELEM[e].n}의 구슬을 얻었다!`);addChat('',`${ELEM[e].e} ${P.nick}님이 ${ELEM[e].n}의 구슬을 얻었습니다!`,'sys')}
+function orbRows(){const o=P.orbs||{};const ks=ELEM6.filter(e=>o[e]);if(!ks.length)return '';return `<h3>속성 구슬</h3>`+ks.map(e=>`<div class="row"><div class="f"><b>${ELEM[e].e} ${ELEM[e].n}의 구슬 ×${o[e]}</b><span class="muted">마법 대장장이에게 가져가면 장비에 ${ELEM[e].n} 속성을 넣어 줘요</span></div></div>`).join('')}
+// 마법 계열 속성 선택 (영구)
+function elemCheck(){if(!P||P.elem)return;if(P.job==='ele'){P.elem='all';save(false);return}if(!MAGIC_LINE.includes(P.job))return;if(layerOpen||$('#dialog').classList.contains('on')){setTimeout(elemCheck,2500);return}chooseElem()}
+function chooseElem(){dialog('🔮 속성 선택',`마법의 길을 걷는 자는 <b>하나의 속성</b>과 계약해야 하네.<br>고른 속성의 스킬만 배울 수 있고, 그 속성 피해 <b>+20%</b>, 그 속성 공격을 받을 때 <b>-20%</b>.<br><b style="color:#ff7a3a">한 번 고르면 영원히 바꿀 수 없어.</b>`,ELEM6.map(e=>({t:`${ELEM[e].e} ${ELEM[e].n}`,f:()=>setTimeout(()=>ask(`<b>${ELEM[e].e} ${ELEM[e].n}</b> 속성과 계약할까요?<br><span class="muted">다시는 바꿀 수 없어요.</span>`,()=>{P.elem=e;save(true);sfx('fanfare');toast(`${ELEM[e].e} ${ELEM[e].n}의 마법사가 되었습니다! 스승에게서 ${ELEM[e].n} 스킬을 배울 수 있어요`)},()=>setTimeout(chooseElem,60)),60)})))}
+function learnList(src){const own=Object.values(SKILLS).filter(s_=>s_.src===src);
+ if((MAGIC_LINE.includes(src)||src==='ele')&&P.hist.includes(src)){const els=P.job==='ele'||P.elem==='all'?ELEM6:P.elem?[P.elem]:[];for(const e of els)own.push(...Object.values(SKILLS).filter(s_=>s_.src==='el_'+e))}
+ return own.sort((a,b)=>a.lv-b.lv)}
+// 마법 대장장이 (장비에 속성 넣기)
+function msmithTalk(n){const items=P.bag.filter(i=>i.slot==='a'||(i.slot||'w')==='w').sort((a,b)=>(b.uid===P.weq||b.uid===P.aeq)-(a.uid===P.weq||a.uid===P.aeq)||b.rar-a.rar).slice(0,30);const o=P.orbs||{};
+ openLayer(`${head('🔮 마법 대장장이 일렉트라')}<p class="muted">속성 구슬 1개와 골드를 주면 장비에 속성을 깃들여 줄게. <b>무기</b>는 기본 공격이 그 속성이 되고, <b>갑옷</b>은 그 속성 피해를 20% 줄여 줘. 이미 속성이 있으면 새 속성으로 바뀌어.</p>
+ <p>보유 구슬: ${ELEM6.map(e=>`${ELEM[e].e}${o[e]||0}`).join(' · ')}</p>
+ ${items.map(it=>{const fee=Math.max(500,it.lv*200);return `<div class="row"><div class="f"><b>${it.uid===P.weq||it.uid===P.aeq?'[장착] ':''}${esc(it.name)}</b><span class="muted">${(it.slot||'w')==='w'?'무기':'갑옷'} · Lv ${it.lv} · 현재 속성 ${it.el?ELEM[it.el].e+' '+ELEM[it.el].n:'없음'} · 비용 ${fee.toLocaleString()}G</span></div><div style="display:flex;flex-wrap:wrap;gap:3px;max-width:130px">${ELEM6.map(e=>`<button class="btn" style="padding:3px 5px" data-ench="${it.uid}|${e}" ${o[e]&&P.gold>=fee&&it.el!==e?'':'disabled'}>${ELEM[e].e}</button>`).join('')}</div></div>`}).join('')||'<p class="muted">장비가 없습니다.</p>'}`,
+ root=>root.querySelectorAll('[data-ench]').forEach(b=>b.onclick=()=>{const [uid,e]=b.dataset.ench.split('|');const it=P.bag.find(i=>String(i.uid)===uid);if(!it)return;const fee=Math.max(500,it.lv*200);if(!(P.orbs&&P.orbs[e])||P.gold<fee)return;
+  P.orbs[e]--;P.gold-=fee;it.el=e;it.name=ELEM[e].e+' '+String(it.name).replace(/^(🔥|💧|🌪️|🪨|✨|🌑)\s/,'');sfx('fanfare');toast(`🔮 ${it.name}에 ${ELEM[e].n} 속성이 깃들었다!`);calc();save(true);msmithTalk(n)}))}
+// 마법 상점 (1시간마다 진열 바뀜)
+const MSHOP_PRICE=100000;
+function mshopStock(){const h=Math.floor(Date.now()/3600000);let x=(h*2654435761)>>>0;const rnd=()=>{x^=x<<13;x>>>=0;x^=x>>>17;x^=x<<5;x>>>=0;return x/4294967296};const out=[];const pool=[...ELEM6];for(let i=0;i<3;i++){const k=Math.floor(rnd()*pool.length);out.push(pool.splice(k,1)[0])}return {h,items:out}}
+function mshopTalk(n){const st=mshopStock();P.mshop=P.mshop&&P.mshop.h===st.h?P.mshop:{h:st.h,b:[]};const left=3600000-(Date.now()%3600000),mm=Math.floor(left/60000),ss=Math.floor(left%60000/1000);
+ openLayer(`${head('🔮 마법 상점')}<p class="muted">속성 구슬은 귀한 물건이라 한 시간에 몇 개씩만 들어온다네. 하나씩만 살 수 있어.</p><p><b>⏳ 다음 입고까지 ${mm}분 ${ss}초</b></p>
+ ${st.items.map((e,i)=>{const sold=P.mshop.b.includes(i);return `<div class="row"><div class="f"><b>${ELEM[e].e} ${ELEM[e].n}의 구슬</b><span class="muted">${MSHOP_PRICE.toLocaleString()}G</span></div><button class="btn ${sold?'':'pri'}" data-mbuy="${i}" ${sold||P.gold<MSHOP_PRICE?'disabled':''}>${sold?'구매함':P.gold<MSHOP_PRICE?'골드 부족':'구매'}</button></div>`}).join('')}`,
+ root=>root.querySelectorAll('[data-mbuy]').forEach(b=>b.onclick=()=>{const i=+b.dataset.mbuy,e=st.items[i];if(P.mshop.b.includes(i)||P.gold<MSHOP_PRICE)return;P.gold-=MSHOP_PRICE;P.mshop.b.push(i);P.orbs=P.orbs||{};P.orbs[e]=(P.orbs[e]||0)+1;sfx('coin');toast(`${ELEM[e].e} ${ELEM[e].n}의 구슬을 샀다!`);save(true);mshopTalk(n)}))}
+function addElemNpcs(){const v=MAPS.village;if(!v||!v.doors)return;const sm=v.doors.smith,sh=v.doors.shop;
+ const p1=placeNear(v,sm[0]-2,sm[1]+1),p2=placeNear(v,sh[0]+2,sh[1]+1);
+ v.npcs.push({name:'마법 대장장이 일렉트라',tpl:'mage',pal:{...BASEPAL.mage,P:'#5a2a8a',p:'#3a1a5a',Y:'#ff9a3a'},role:'msmith',x:p1.x,y:p1.y},{name:'마법 상점 세레스',tpl:'mage',pal:{...BASEPAL.mage,P:'#2a6a6a',p:'#1a4a4a',Y:'#9ff0ff'},role:'mshop',x:p2.x,y:p2.y})}
 (async function boot(){
  FONT=getComputedStyle(document.body).fontFamily;
- resize();buildMaps();loadAcc();
+ resize();buildMaps();addElemNpcs();loadAcc();
  // 타이틀 배경용 마을
  MAP=MAPS.village;
  requestAnimationFrame(loop);
