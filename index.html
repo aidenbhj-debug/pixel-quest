@@ -791,26 +791,29 @@ function genVillage(){
  for(let i=0;i<7;i++){setT(m,25+i*2,18,9);setT(m,25+i*2,33,9)}
  // 건물
  const B=(x,y,w,h,roof,label,tower)=>{house(m,x,y,w,h,roof,label);if(tower)m.b[m.b.length-1].tower=1;const dx=x+Math.floor(w/2),dy=y+h;return [dx,dy]};
- const dCastle=B(6,5,12,8,'#8b1e2b','영주성',1),dTrain=B(21,7,8,6,'#5a5a6a','훈련소'),dMusic=B(36,7,8,6,'#c43c8a','음악당'),dPost=B(47,7,7,6,'#7a3a1e','⚔️ 무기점');
- const dMagic=B(6,19,8,5,'#3a2a7a','마법학교'),dAlc=B(16,20,6,4,'#2a6a5a','연금술 공방'),dSmith=B(43,19,6,5,'#4a4a58','대장간'),dHunt=B(51,19,7,5,'#4a5a6a','🛡️ 방어구점');
- const dChief=B(6,31,7,5,'#8a5a2b','이장의 집'),dPub=B(15,31,7,5,'#7a3a1e','주점'),dInn=B(43,31,7,5,'#3f5fa8','여관'),dShop=B(52,31,6,5,'#a6402c','상점');
- for(const d of [dCastle,dTrain,dMusic,dPost])rect(m,d[0],d[1],d[0],14,1);
- for(const d of [dMagic,dAlc,dSmith,dHunt])rect(m,d[0],d[1],d[0],24,1);
- for(const d of [dChief,dPub,dInn,dShop])rect(m,d[0],d[1],d[0],36,1);
+ // 북쪽·서쪽 = 길드 거리, 동쪽 = 상점가, 남서쪽 = 주거지
+ const dCastle=B(6,5,12,8,'#8b1e2b','영주성',1),dTrain=B(21,7,8,6,'#5a5a6a','기사단 본부'),dMagic=B(36,7,8,6,'#3a2a7a','마법사의 탑',1),dMusic=B(47,7,7,6,'#c43c8a','음악당');
+ const dHuntH=B(6,19,8,5,'#2a6a3a','사냥꾼 산장'),dPub=B(16,20,6,4,'#5a2a1e','주점'),dPost=B(43,19,6,5,'#7a3a1e','⚔️ 무기점'),dHunt=B(51,19,7,5,'#4a5a6a','🛡️ 방어구점');
+ const dChief=B(6,31,7,5,'#8a5a2b','이장의 집'),dInn=B(15,31,7,5,'#3f5fa8','여관'),dSmith=B(43,31,7,5,'#4a4a58','대장간'),dShop=B(52,31,6,5,'#a6402c','상점');
+ for(const d of [dCastle,dTrain,dMagic,dMusic])rect(m,d[0],d[1],d[0],14,1);
+ for(const d of [dHuntH,dPub,dPost,dHunt])rect(m,d[0],d[1],d[0],24,1);
+ for(const d of [dChief,dInn,dSmith,dShop])rect(m,d[0],d[1],d[0],36,1);
+ m.doors={castle:dCastle,knight:dTrain,mage:dMagic,music:dMusic,hunt:dHuntH,rogue:dPub,weapon:dPost,armor:dHunt,chief:dChief,inn:dInn,smith:dSmith,shop:dShop};
+ m.signs0=[{x:20*TS,y:16.4*TS,t:'⚔️ 길드 거리'},{x:51*TS,y:17.4*TS,t:'💰 상점가'},{x:14*TS,y:29.4*TS,t:'🏡 주거지'}];
  for(const[a,b,col]of[[25,20,'#c43c2c'],[37,20,'#3f5fa8'],[25,30,'#e0b23a'],[37,30,'#3e8a3e']]){house(m,a,b,2,2,col,'',false);m.b[m.b.length-1].door=false}
  // 남쪽: 농장, 연못, 화장실
  rect(m,6,39,22,46,10);circ(m,49,42.5,7,3.6,2);
  const dToi=B(26,40,2,2,'#6b4423','화장실');rect(m,dToi[0],dToi[1],dToi[0],dToi[1],1);rect(m,dToi[0],dToi[1],30,dToi[1],1);
  rect(m,55,4,58,7,4);m.b.push({x:55,y:4,w:4,h:4,style:'gate',label:'⚔️ 레이드 입구',door:false});rect(m,57,8,57,14,1);
- m.signs=[{x:14*TS,y:38.7*TS,t:'🌾 농장'},{x:49*TS,y:38.7*TS,t:'🎣 연못'},{x:32.5*TS,y:2.5*TS,t:'북문 · 깊은 광산'},{x:61.5*TS,y:24.3*TS,t:'동문'},{x:2.5*TS,y:24.3*TS,t:'서문'},{x:32.5*TS,y:50.4*TS,t:'남문 · 항구'}];
+ m.signs=[{x:14*TS,y:38.7*TS,t:'🌾 농장'},{x:49*TS,y:38.7*TS,t:'🎣 연못'},{x:32.5*TS,y:2.5*TS,t:'북문 · 깊은 광산'},{x:61.5*TS,y:24.3*TS,t:'동문'},{x:2.5*TS,y:24.3*TS,t:'서문'},{x:32.5*TS,y:50.4*TS,t:'남문 · 항구'},...m.signs0];
  const P_=(a,b)=>({x:a*TS,y:b*TS});
  m.npcs.push(
-  {name:'마을 이장 한스',tpl:'priest',pal:{...BASEPAL.priest,M:'#8a5a2b',R:'#5a7f3a',r:'#3e5e28',Y:'#e0b23a'},role:'chief',...P_(dChief[0]+2.5,36.8)},
-  {name:'상인 벤',tpl:'worker',pal:{...BASEPAL.worker,A:'#a6402c',a:'#7a2a1c'},role:'shop',...P_(dShop[0]-1.5,36.8)},
-  {name:'대장장이 고든',tpl:'worker',pal:{...BASEPAL.worker,A:'#3a3a3a',a:'#222',T:'#8a5a2b',O:'#4a3a2a',o:'#33281c'},role:'smith',...P_(dSmith[0]+2.5,24.8)},
-  {name:'여관 주인 마사',tpl:'priest',pal:{...BASEPAL.priest,M:'#e8c8a8',R:'#c86a8a',r:'#a04a6a',Y:'#fff'},role:'inn',...P_(dInn[0]+2.5,36.8)},
-  {name:'무기상 브랜든',tpl:'worker',pal:{...BASEPAL.worker,A:'#7a3a1e',a:'#4a2010',O:'#5a3a2a',o:'#3a2418',T:'#c8b8a0'},role:'wshop',...P_(dPost[0]+2,14.6)},
-  {name:'방어구상 헬가',tpl:'knight',pal:{...BASEPAL.knight,A:'#5a6a7a',a:'#3a4a5a',R:'#c8a040'},role:'ashop',...P_(dHunt[0]+2,24.8)},
+  {name:'마을 이장 한스',tpl:'priest',pal:{...BASEPAL.priest,M:'#8a5a2b',R:'#5a7f3a',r:'#3e5e28',Y:'#e0b23a'},role:'chief',...P_(dChief[0]+2.5,dChief[1]+.8)},
+  {name:'상인 벤',tpl:'worker',pal:{...BASEPAL.worker,A:'#a6402c',a:'#7a2a1c'},role:'shop',...P_(dShop[0]-1.5,dShop[1]+.8)},
+  {name:'대장장이 고든',tpl:'worker',pal:{...BASEPAL.worker,A:'#3a3a3a',a:'#222',T:'#8a5a2b',O:'#4a3a2a',o:'#33281c'},role:'smith',...P_(dSmith[0]+2.5,dSmith[1]+.8)},
+  {name:'여관 주인 마사',tpl:'priest',pal:{...BASEPAL.priest,M:'#e8c8a8',R:'#c86a8a',r:'#a04a6a',Y:'#fff'},role:'inn',...P_(dInn[0]+2.5,dInn[1]+.8)},
+  {name:'무기상 브랜든',tpl:'worker',pal:{...BASEPAL.worker,A:'#7a3a1e',a:'#4a2010',O:'#5a3a2a',o:'#3a2418',T:'#c8b8a0'},role:'wshop',...P_(dPost[0]+2,dPost[1]+.8)},
+  {name:'방어구상 헬가',tpl:'knight',pal:{...BASEPAL.knight,A:'#5a6a7a',a:'#3a4a5a',R:'#c8a040'},role:'ashop',...P_(dHunt[0]+2,dHunt[1]+.8)},
   {name:'레이드 관리관 발렌',tpl:'knight',pal:{...BASEPAL.knight,A:'#3a1a1a',a:'#1a0a0a',R:'#ff3a3a',H:'#5a5a6a',h:'#8a8a9a',G:'#ffd84a'},role:'raid',x:55.5*TS,y:9.6*TS},
   {name:'스킬 스승 엘린',tpl:'mage',pal:{...BASEPAL.mage,P:'#2a8a7a',p:'#1a5a50'},role:'tree',...P_(28,22.6)},
   {name:'광산 안내인 토르',tpl:'worker',pal:{...BASEPAL.worker,A:'#ffd84a',a:'#c43c2c',O:'#5a4a3a',o:'#3a2e22'},role:'pick',...P_(29.5,5)},
@@ -850,20 +853,20 @@ function genHarbor(){
 function buildMaps(){
  MAPS.village=genVillage();MAPS.cathedral=genCathedral();MAPS.harbor=genHarbor();
  // 주인공의 집
- {const v=MAPS.village;house(v,35,40,6,4,'#7a4a2a','🏠 나의 집 (입구)');rect(v,34,45,38,45,1);
+ {const v=MAPS.village;rect(v,24,34,30,36,0);house(v,25,34,5,2,'#7a4a2a','🏠 나의 집 (입구)');
   const H=mkMap('home','나의 집',14,10,'harbor',true);H.hall=1;rect(H,0,0,13,9,1);border(H,13);rect(H,6,9,7,9,1);
   H.objs.push({kind:'hshelf',deco:1,x:6*TS,y:1.9*TS},{kind:'hbed',deco:1,x:2.6*TS,y:4.2*TS},{kind:'htable',deco:1,x:10.5*TS,y:3.6*TS},{kind:'hrug',deco:1,x:7*TS,y:6.2*TS});
   H.npcs.push({name:'존두',tpl:'worker',pal:{...BASEPAL.worker,H:'#e8e4dc',h:'#b8b4ac',O:'#7a5a3a',o:'#5a4028',S:'#e8c8a8',s:'#c8a888'},role:'jondu',x:5.4*TS,y:4.9*TS,sit:1});
-  v.portals.push({x:38,y:44,w:1,h:1,to:'home',ax:7*TS,ay:8.3*TS,lv:1,door:1});H.portals.push({x:6,y:9,w:2,h:1,to:'village',ax:38.5*TS,ay:45.7*TS,lv:1});
+  v.portals.push({x:27,y:36,w:1,h:1,to:'home',ax:7*TS,ay:8.3*TS,lv:1,door:1});H.portals.push({x:6,y:9,w:2,h:1,to:'village',ax:27.5*TS,ay:37.6*TS,lv:1});
   H.spawnAt={x:3.6*TS,y:6.2*TS};MAPS.home=H}
  // 직업 길드 (마을 건물 안)
  const HALLS=[
-  {id:'h_knight',name:'기사단 본부',theme:'crypt',w:30,h:22,door:[25,13],label:'⚔️ 기사단 본부',old:'훈련소',jobs:['swd','spr','shd','ber']},
-  {id:'h_mage',name:'마법사의 탑',theme:'castle',w:30,h:22,door:[10,24],label:'🔮 마법사의 탑',old:'마법학교',jobs:['app','wit','dru','sha','alc']},
-  {id:'h_hunt',name:'사냥꾼 산장',theme:'harbor',w:26,h:20,door:[19,24],label:'🏹 사냥꾼 산장',old:'연금술 공방',jobs:['arc','arw','wen']},
-  {id:'h_rogue',name:'도적 길드',theme:'castle',w:26,h:20,door:[18,36],label:'🗡️ 주점 · 도적 길드',old:'주점',jobs:['con','gam','bur','pkp']},
-  {id:'h_castle',name:'영주성 대전',theme:'cathedral',w:26,h:20,door:[12,13],label:'🏰 영주성',old:'영주성',jobs:['far','msn']},
-  {id:'h_music',name:'음악당',theme:'divine',w:22,h:16,door:[40,13],label:'🎵 음악당',old:'음악당',jobs:['brd','sop']}
+  {id:'h_knight',name:'기사단 본부',theme:'crypt',w:30,h:22,door:'knight',label:'⚔️ 기사단 본부',old:'기사단 본부',jobs:['swd','spr','shd','ber']},
+  {id:'h_mage',name:'마법사의 탑',theme:'castle',w:30,h:22,door:'mage',label:'🔮 마법사의 탑',old:'마법사의 탑',jobs:['app','wit','dru','sha','alc']},
+  {id:'h_hunt',name:'사냥꾼 산장',theme:'harbor',w:26,h:20,door:'hunt',label:'🏹 사냥꾼 산장',old:'사냥꾼 산장',jobs:['arc','arw','wen']},
+  {id:'h_rogue',name:'도적 길드',theme:'castle',w:26,h:20,door:'rogue',label:'🗡️ 주점 · 도적 길드',old:'주점',jobs:['con','gam','bur','pkp']},
+  {id:'h_castle',name:'영주성 대전',theme:'cathedral',w:26,h:20,door:'castle',label:'🏰 영주성',old:'영주성',jobs:['far','msn']},
+  {id:'h_music',name:'음악당',theme:'divine',w:22,h:16,door:'music',label:'🎵 음악당',old:'음악당',jobs:['brd','sop']}
  ];
  const HALL_DECO={h_knight:{col:'#6a2424',d:(cx,W_,H_)=>[['hrack',5,1.9],['hrack',9,1.9],['hrack',W_-6,1.9],['hrack',W_-10,1.9],['hbanner',cx-3,1.4,'#8a1a1a'],['hbanner',cx+4,1.4,'#8a1a1a'],['hbarrel',2.5,H_-2.4]]},
   h_mage:{col:'#3e2470',d:(cx,W_,H_)=>[['hshelf',5,1.9],['hshelf',9,1.9],['hshelf',W_-6,1.9],['hshelf',W_-10,1.9],['hcircle',cx+.5,H_/2],['htable',cx-6,3.6],['htable',cx+7,3.6],['hbanner',cx-3,1.4,'#5a2a9a'],['hbanner',cx+4,1.4,'#5a2a9a']]},
@@ -879,7 +882,7 @@ function buildMaps(){
   if(H.id==='h_castle')m.objs.push({kind:'board',name:'영지 게시판',x:(cx+4.5)*TS,y:3.8*TS});
   const per=Math.ceil(H.jobs.length/2),step=per>1?(H.h-9)/(per-1):0;
   H.jobs.forEach((jid,i)=>{const left=i<per,row=left?i:i-per;TRAINERS[jid]=[H.id,left?3.5:H.w-3.5,4.8+row*step,TRAINERS[jid]?TRAINERS[jid][3]:JD[jid][0]+' 스승']});
-  const v=MAPS.village,[dx,dy]=H.door;
+  const v=MAPS.village,[dx,dy]=v.doors[H.door];
   v.portals.push({x:dx,y:dy,w:1,h:1,to:H.id,ax:(cx+.5)*TS,ay:(H.h-2.4)*TS,lv:1,door:1});
   m.portals.push({x:cx-1,y:H.h-1,w:3,h:1,to:'village',ax:(dx+.5)*TS,ay:(dy+1.7)*TS,lv:1});
   const b=v.b.find(b=>b.label===H.old);if(b)b.label=H.label+' (입구)';
