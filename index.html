@@ -1095,13 +1095,20 @@ const RAIDS=[
 ];
 RAIDS.push({id:'gogarena',name:'태초의 신의 영역',short:'시련',lv:80,hidden:1,theme:'divine',tint:'rgba(0,0,0,.35)',mobs:[],mlv:[1,1],waves:[],boss:[['godOfGods',5000]],gold:0,expMul:0,items:[],time:600,col:'#ffd84a',desc:''});
 const RAID_BACK={x:57.5*TS,y:10.4*TS};const RAID_HARD=2;
-function startRaid(d,seed,n){seed=seed||Math.floor(Math.random()*1e9);n=Math.max(1,n||1);W.raid={def:d,wave:0,t0:now(),nextAt:now()+2.5,over:false,seed,n,key:d.id+':'+seed,my:{},seen:{},pend:{}};if(ROOM)ROOM.presence({rd:{k:W.raid.key,d:{}}}).catch(()=>{});changeMap(d.id,20.5*TS,28*TS);$('#raidbar').hidden=false;toast(`⚔️ ${d.name} 시작!${n>1?` (파티 ${n}명 · 몬스터 ×${n})`:''} 2초 뒤 첫 웨이브`)}
+function dayKey(){const x=new Date();return x.getFullYear()+'-'+(x.getMonth()+1)+'-'+x.getDate()}
+function raidDailyLeft(d){if(!d.daily)return Infinity;const k=dayKey();P.rday=P.rday&&P.rday.d===k?P.rday:{d:k,c:{}};return d.daily-(P.rday.c[d.id]||0)}
+function startRaid(d,seed,n){if(d.daily){raidDailyLeft(d);P.rday.c[d.id]=(P.rday.c[d.id]||0)+1;save(false)}seed=seed||Math.floor(Math.random()*1e9);n=Math.max(1,n||1);W.raid={def:d,wave:0,t0:now(),nextAt:now()+2.5,over:false,seed,n,key:d.id+':'+seed,my:{},seen:{},pend:{}};if(ROOM)ROOM.presence({rd:{k:W.raid.key,d:{}}}).catch(()=>{});changeMap(d.id,20.5*TS,28*TS);$('#raidbar').hidden=false;toast(`⚔️ ${d.name} 시작!${n>1?` (파티 ${n}명 · 몬스터 ×${n})`:''} 2초 뒤 첫 웨이브`)}
 function raidSpawnWave(){const R_=W.raid,d=R_.def;R_.wave++;const n=d.waves.length,rr=rng(R_.seed+R_.wave*7919),pk=a=>a[Math.floor(rr()*a.length)];
  const fl=()=>{for(let k=0;k<60;k++){const x=(3+rr()*(MAP.w-6))*TS,y=(2+rr()*(MAP.h*.6-2))*TS;if(!blocked(MAP,x,y,6))return {x,y}}return {x:MAP.w*TS/2,y:8*TS}};
  const tune=(m,mid,hm,am)=>{m.hp=m.max=Math.round(m.max*hm*R_.n);m.atk*=am*R_.n;m.raid=1;m.aggro=999;m.mid=mid;const pd=R_.pend[mid];if(pd){m.hp-=pd;delete R_.pend[mid]}};
  if(R_.wave<=n){for(let i=0;i<d.waves[R_.wave-1];i++){const p=fl(),k=pk(d.mobs),lv=d.mlv[0]+Math.floor(rr()*(d.mlv[1]-d.mlv[0]+1));spawnMon(k,lv,p.x,p.y,false);tune(W.mons[W.mons.length-1],R_.wave+'-'+i,RAID_HARD,RAID_HARD)}toast(`🔥 웨이브 ${R_.wave}/${n}`)}
- else{d.boss.forEach(([k,lv],i)=>{spawnMon(k,lv,(20+(i-(d.boss.length-1)/2)*8)*TS,7*TS,true);tune(W.mons[W.mons.length-1],'b'+i,3*RAID_HARD,1.2*RAID_HARD)});toast(`👑 레이드 보스 등장!`);sysChat(`${P.nick}님이 ${d.name} 보스에 도전합니다!`)}}
-function raidTick(){const R_=W.raid;if(!R_||R_.over||!MAP.raid||!P||P.dead)return;const t=now(),d=R_.def;if(ROOM&&t-(R_.sentT||0)>.35){R_.sentT=t;const dd={};for(const k in R_.my)dd[k]=Math.round(R_.my[k]);const js=JSON.stringify(dd);if(js!==R_.lastJs){R_.lastJs=js;ROOM.presence({rd:{k:R_.key,d:dd}}).catch(()=>{})}}
+ else{d.boss.forEach(([k,lv],i)=>{spawnMon(k,lv,(20+(i-(d.boss.length-1)/2)*8)*TS,7*TS,true);tune(W.mons[W.mons.length-1],'b'+i,d.bossHp||3*RAID_HARD,1.2*RAID_HARD);if(d.lvText)W.mons[W.mons.length-1].lvText=d.lvText});toast(`👑 레이드 보스 등장!`);sysChat(`${P.nick}님이 ${d.name} 보스에 도전합니다!`)}}
+function pctHit(p){if(!P||P.dead||P.inv>now())return;const d=Math.max(1,Math.round(P.S.hp*p));P.hp-=d;P.flash=.12;P.lastHurt=now();ftxt(P.x,P.y-24,d,'#ff6ae0');sfx('hurt');if(P.hp<=0)die()}
+function raidPct(R_,d,t){const b=W.mons.find(m=>m.boss&&m.hp>0);if(!b)return;
+ if(!R_.pulseAt)R_.pulseAt=t+10;else if(t>=R_.pulseAt){R_.pulseAt=t+10;fx({type:'ring',x:b.x,y:b.y-8*b.sc,r:340,life:1,col:'#ff9ae8',w:6});toast('🌈 태초의 맥박!');pctHit(.08)}
+ if(b.hp<b.max*.5){if(!R_.ph2){R_.ph2=1;toast('💥 태초의 화신이 분노한다 — 땅이 붕괴하기 시작한다!');sfx('boss')}
+  if(!R_.zoneAt||t>=R_.zoneAt){R_.zoneAt=t+3;W.hazards.push({x:P.x+R(-40,40),y:P.y+R(-30,30),r:34,until:t+9,dps:0,pct:.10,col:'#ff4ab0',next:0})}}}
+function raidTick(){const R_=W.raid;if(!R_||R_.over||!MAP.raid||!P||P.dead)return;const t=now(),d=R_.def;if(d.pct)raidPct(R_,d,t);if(ROOM&&t-(R_.sentT||0)>.35){R_.sentT=t;const dd={};for(const k in R_.my)dd[k]=Math.round(R_.my[k]);const js=JSON.stringify(dd);if(js!==R_.lastJs){R_.lastJs=js;ROOM.presence({rd:{k:R_.key,d:dd}}).catch(()=>{})}}
  if(t-R_.t0>d.time){raidEnd(false);return}
  if(R_.nextAt){if(t>=R_.nextAt){R_.nextAt=0;raidSpawnWave()}return}
  if(!W.mons.some(m=>m.hp>0)){if(R_.wave>d.waves.length)raidEnd(true);else{R_.nextAt=t+2.5;toast(R_.wave===d.waves.length?'⚠️ 곧 보스가 나타납니다!':'다음 웨이브 준비…')}}}
@@ -1109,7 +1116,7 @@ function raidReward(rar,lv){const a=ARCH_W[J().arch]||['sword'];const wt=a.filte
 function raidEnd(win){const R_=W.raid;R_.over=true;if(ROOM)ROOM.presence({rd:null}).catch(()=>{});const d=R_.def;
  if(win&&d.id==='pri_arena'){P.pri=P.pri||{};P.pri.done=true;P.frames=P.frames||{};P.frames[4]=true;const pit=raidReward(7,3000);if(P.bag.length<BAGMAX)P.bag.push(pit);save(true);sfx('fanfare');sysChat(`🌅 ${P.nick}님이 태초의 파수꾼을 쓰러뜨리고 [태초] 장비를 얻었습니다!`);window.layerLock=true;openLayer(`<h2>🌅 태초의 문이 열렸다</h2><p>파수꾼이 쓰러지고 태초의 우주로 가는 길이 열렸다. 🌌 차원 이동으로 언제든 갈 수 있다.</p><p>보상: <b style="color:${RAR[7].col};text-shadow:0 0 2px #000">[태초] ${esc(pit.name)}</b></p><button class="btn pri w" id="rback">성운의 신전으로</button>`,root=>root.querySelector('#rback').onclick=()=>{closeLayer();raidBack()});return}
  if(win&&d.id==='gogarena'){P.gog=P.gog||{};P.gog.m3=true;const git=raidReward(7,4000);if(P.bag.length<BAGMAX)P.bag.push(git);save(true);sysChat(`🌌 ${P.nick}님이 태초의 신을 쓰러뜨렸습니다!`);window.layerLock=true;openLayer(`<h2>🌌 시련 통과</h2><p>태초의 신을 쓰러뜨렸다. 태초의 성소로 돌아가 전직하라.</p><p>보상: <b style="color:${RAR[7].col};text-shadow:0 0 2px #000">[태초] ${esc(git.name)}</b></p><button class="btn pri w" id="rback">태초의 성소로</button>`,root=>root.querySelector('#rback').onclick=()=>{closeLayer();changeMap('p_gogsanc',11*TS,12*TS)});return}
- if(win){const items=d.items.map(([r,l])=>raidReward(r,l));let extra=0;for(const it of items){if(P.bag.length<BAGMAX)P.bag.push(it);else extra+=wPrice(it)}const exp=P.lv<MAXLV?Math.round(need(P.lv)*d.expMul):0;P.gold+=d.gold+extra;P.raids=P.raids||{};P.raids[d.id]=(P.raids[d.id]||0)+1;
+ if(win){const items=d.items.map(([r,l])=>raidReward(r,l));let orbTxt='';if(d.id==='raid_p'){if(Math.random()<.15)items.push(raidReward(7,4000));P.orbs=P.orbs||{};const no=RI(1,2);const got=[];for(let i=0;i<no;i++){const e=pick(ELEM6);P.orbs[e]=(P.orbs[e]||0)+1;got.push(ELEM[e].e+' '+ELEM[e].n)}orbTxt=got.join(', ')+'의 구슬';setTimeout(()=>toast(`🔮 ${orbTxt}을 얻었다!`),1200)}let extra=0;for(const it of items){if(P.bag.length<BAGMAX)P.bag.push(it);else extra+=wPrice(it)}const exp=P.lv<MAXLV?Math.round(need(P.lv)*d.expMul):0;P.gold+=d.gold+extra;P.raids=P.raids||{};P.raids[d.id]=(P.raids[d.id]||0)+1;
   sysChat(`🏆 ${P.nick}님이 ${d.name}를 클리어했습니다!`);sfx('fanfare');if(exp)gainExp(exp);save(true);pushBoard(true);
   const sec=Math.round(now()-R_.t0);
   window.layerLock=true;openLayer(`<h2>🏆 레이드 클리어!</h2><p><b style="color:${d.col}">${d.name}</b> · ${Math.floor(sec/60)}분 ${sec%60}초</p><h3>보상</h3><p>💰 ${(d.gold+extra).toLocaleString()}G${exp?` · ✨ 경험치 ${exp.toLocaleString()}`:''}</p>${items.map(it=>`<div class="row">${itemIcon(it)}<div class="f"><b style="color:${RAR[it.rar].col};text-shadow:0 0 1px #000">${esc(it.name)} <span class="tag">${RAR[it.rar].n}</span></b><span class="muted">${it.slot==='a'?'방어 '+it.def:'공격 '+it.atk}${bnText(it)?' · '+bnText(it):''}</span></div></div>`).join('')}<button class="btn pri w" id="rback" style="margin-top:12px">마을로 귀환</button>`,root=>{paintMinis(root);root.querySelector('#rback').onclick=()=>{closeLayer();raidBack()}})}
@@ -1419,7 +1426,7 @@ function update(dt){
   for(const p of MAP.portals){if(tx>=p.x&&tx<p.x+p.w&&ty>=p.y&&ty<p.y+p.h){if(P.lv<p.lv){P.x=P.ox;P.y=P.oy;if(!P.gateT||t-P.gateT>2){P.gateT=t;toast(`🔒 ${MAPS[p.to].name}은(는) Lv ${p.lv}부터 입장할 수 있습니다`)}}else changeMap(p.to,p.ax,p.ay);break}}
   // 보스 디버프: 중독, 장판
   if(P.pdot){if(t>P.pdot.until)P.pdot=null;else{P.pdotAcc=(P.pdotAcc||0)+P.pdot.dps*dt;if(P.pdotAcc>=1){const d=Math.floor(P.pdotAcc);P.pdotAcc-=d;P.hp-=d;P.lastHurt=t;if(Math.random()<.2)ftxt(P.x,P.y-22,d,P.pdot.col);if(P.hp<=0){die()}}}}
-  for(const h of (W.hazards||[])){if(t>h.until){h.dead=1;continue}if(t>=h.next&&Math.hypot(P.x-h.x,P.y-h.y)<h.r){h.next=t+.5;hurt(h.dps*.5,{hp:0},BOSS_PEN)}}W.hazards=(W.hazards||[]).filter(h=>!h.dead);
+  for(const h of (W.hazards||[])){if(t>h.until){h.dead=1;continue}if(t>=h.next&&Math.hypot(P.x-h.x,P.y-h.y)<h.r){h.next=t+.5;h.pct?pctHit(h.pct*.5):hurt(h.dps*.5,{hp:0},BOSS_PEN)}}W.hazards=(W.hazards||[]).filter(h=>!h.dead);
   // 회복
   const T=(TEC||buildTE()),ooc=!P.lastHurt||t-P.lastHurt>5;
   let regen=ooc?.012+Math.min(.05,.0006*(T.reg||0)):Math.min(.02,.0003*(T.reg||0));for(const b of P.buffs)if(b.regen)regen+=b.regen*(ooc?1:.5);if(MAP.safe)regen+=.02;
@@ -1457,7 +1464,7 @@ function update(dt){
  for(const p of W.proj){
   p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
   if(solidPx(MAP,p.x,p.y+6)&&getT(MAP,Math.floor(p.x/TS),Math.floor((p.y+6)/TS))!==2){if(p.o.boom&&p.from==='p')explode(p);p.life=0;continue}
-  if(p.from==='m'){if(P&&!P.dead&&Math.hypot(P.x-p.x,P.y-8-p.y)<6+p.size){hurt(p.dmg,null,p.eff?BOSS_PEN:0);if(p.eff)pEff(p.eff);p.life=0}continue}
+  if(p.from==='m'){if(P&&!P.dead&&Math.hypot(P.x-p.x,P.y-8-p.y)<6+p.size){if(p.eff&&p.eff.pct)pctHit(p.eff.pct);else hurt(p.dmg,null,p.eff?BOSS_PEN:0);if(p.eff)pEff(p.eff);p.life=0}continue}
   for(const m of W.mons){if(m.hp<=0||p.hit.has(m))continue;if(Math.hypot(m.x-p.x,(m.y-6*m.sc)-p.y)<7*m.sc+p.size){
    p.hit.add(m);
    if(p.from==='b'){m.hp-=p.fixed;m.flash=.1;ftxt(m.x,m.y-16*m.sc,p.fixed,'#d8d0f0');if(m.hp<=0)killMon(m,false)}
@@ -1530,7 +1537,7 @@ function pHit(x,y,r){return P&&!P.dead&&Math.hypot(P.x-x,P.y-6-y)<r}
 function pEff(o){const t=now();if(o.slow){P.slowT=t+2.5;ftxt(P.x,P.y-30,'❄ 둔화','#9fd8ff')}if(o.poison||o.burn){P.pdot={until:t+4,dps:o.dps||P.S.hp*.012,col:o.burn?'#ff8a3a':'#9be15d'}}}
 function bossSkill(m){
  if(!P||P.dead)return;const list=BOSS_SK[m.k]||[['내려찍기','slam',2,{r:36}]];m.bsi=((m.bsi==null?-1:m.bsi)+1)%list.length;
- const [nm,type,mult,o0]=list[m.bsi],o=o0||{},A=m.atk*mult*BOSS_DMG,hurt=(d,s)=>hurtPen(d,s,BOSS_PEN),col=o.col||'#ff3a3a',by=m.y-8*m.sc;
+ const [nm,type,mult,o0]=list[m.bsi],o=o0||{},A=m.atk*mult*BOSS_DMG,hurt=(d,s)=>o.pct?pctHit(o.pct):hurtPen(d,s,BOSS_PEN),col=o.col||'#ff3a3a',by=m.y-8*m.sc;
  ftxt(m.x,m.y-16*m.sc-12,nm+'!','#ff9a6a',true);sfx('boss');
  switch(type){
   case 'slam':{const tx=P.x,ty=P.y-6,r=o.r||36;fx({type:'warn',x:tx,y:ty,r,life:1,col});after(1,()=>{fx({type:'boom',x:tx,y:ty,r,life:.4,col:'#c8a070'});if(pHit(tx,ty,r)){hurt(A,m);pEff(o)}});break}
@@ -1539,9 +1546,9 @@ function bossSkill(m){
    W.proj.push({x:m.x,y:by,vx:Math.cos(ang)*120,vy:Math.sin(ang)*120,dmg:A,eff:o,o:{},kind:'fire',col:o.col||(o.poison?'#7ad04a':'#ff7a2a'),size:o.size||4,life:2.4,from:'m',hit:new Set()})}break}
   case 'meteor':{for(let i=0;i<(o.n||5);i++){const tx=P.x+R(-70,70)*(i?1:0),ty=P.y-6+R(-50,50)*(i?1:0),r=26;fx({type:'warn',x:tx,y:ty,r,life:.9+i*.12,col});after(.9+i*.12,()=>{fx({type:'boom',x:tx,y:ty,r,life:.4,col:o.col||'#ff8a2a'});if(pHit(tx,ty,r)){hurt(A,m);pEff(o)}})}break}
   case 'beam':{const dx=P.x-m.x,dy=P.y-6-by,l=Math.hypot(dx,dy)||1,ux=dx/l,uy=dy/l,L=260,w=o.w||14;fx({type:'warnline',x:m.x,y:by,dx:ux,dy:uy,r:L,w,life:.9,col});
-   after(.9,()=>{fx({type:'beam',x:m.x,y:by,dx:ux,dy:uy,r:L,life:.35,col:o.col||'#ffe0a0',w:7});if(P&&!P.dead){const px=P.x-m.x,py=P.y-6-by,al=px*ux+py*uy,pp=Math.abs(px*uy-py*ux);if(al>0&&al<L&&pp<w)hurt(A,m)}});break}
+   after(.9,()=>{fx({type:'beam',x:m.x,y:by,dx:ux,dy:uy,r:L,life:.35,col:o.col||'#ffe0a0',w:7});if(P&&!P.dead){const px=P.x-m.x,py=P.y-6-by,al=px*ux+py*uy,pp=Math.abs(px*uy-py*ux);if(al>0&&al<L&&pp<w){if(o.pct)pctHit(o.pct);else hurt(A,m)}}});break}
   case 'charge':{const dx=P.x-m.x,dy=P.y-m.y,l=Math.hypot(dx,dy)||1;fx({type:'warnline',x:m.x,y:by,dx:dx/l,dy:dy/l,r:Math.min(200,l+30),w:10*m.sc,life:.6,col});after(.6,()=>{m.cdx=dx/l;m.cdy=dy/l;m.chargeT=now()+.55;m.chHit=0;m.chDmg=A});break}
-  case 'summon':{const cnt=W.mons.filter(x=>x.summoned&&x.hp>0).length;for(let i=0;i<Math.min(o.n||3,10-cnt);i++){const a=i*6.283/(o.n||3);const x=m.x+Math.cos(a)*30,y=m.y+Math.sin(a)*20;spawnMon(o.k,Math.max(1,Math.round(m.lv*.85)),blocked(MAP,x,y,5)?m.x:x,blocked(MAP,x,y,5)?m.y:y,false);const s=W.mons[W.mons.length-1];s.summoned=1;s.aggro=999;if(m.raid){s.raid=1;s.hp=s.max=Math.round(s.max*RAID_HARD);s.atk*=RAID_HARD}fx({type:'puff',x:s.x,y:s.y-6,life:.5,col:'#c8a0ff'})}break}
+  case 'summon':{const cnt=W.mons.filter(x=>x.summoned&&x.hp>0).length;for(let i=0;i<Math.min(o.n||3,10-cnt);i++){const a=i*6.283/(o.n||3);const x=m.x+Math.cos(a)*30,y=m.y+Math.sin(a)*20;spawnMon(o.k,Math.max(1,Math.round(Math.min(m.lv*.85,o.maxLv||1e9))),blocked(MAP,x,y,5)?m.x:x,blocked(MAP,x,y,5)?m.y:y,false);const s=W.mons[W.mons.length-1];s.summoned=1;s.aggro=999;if(m.raid){s.raid=1;s.hp=s.max=Math.round(s.max*RAID_HARD);s.atk*=RAID_HARD}fx({type:'puff',x:s.x,y:s.y-6,life:.5,col:'#c8a0ff'})}break}
   case 'heal':{const h=Math.round(m.max*mult);m.hp=Math.min(m.max,m.hp+h);ftxt(m.x,m.y-16*m.sc,'+'+h,'#7dff8a',true);fx({type:'ring',x:m.x,y:by,r:30,life:.6,col:'#7dff8a',w:3});break}
   case 'enrage':{if(!m.enr){m.enr=1;m.atk*=1.3;m.spd*=1.3;fx({type:'ring',x:m.x,y:by,r:40,life:.8,col:'#ff2a2a',w:4});toast(`💢 ${m.name}이(가) 분노했습니다!`)}else{const tx=P.x,ty=P.y-6;fx({type:'warn',x:tx,y:ty,r:40,life:1,col});after(1,()=>{fx({type:'boom',x:tx,y:ty,r:40,life:.4,col:'#ff4a2a'});if(pHit(tx,ty,40))hurt(m.atk*2,m)})}break}
   case 'pull':{const r=o.r||60;fx({type:'vortex',x:m.x,y:by,r:r*1.6,life:.8,col});for(let k=0;k<12;k++){const dx=m.x-P.x,dy=m.y-P.y,l=Math.hypot(dx,dy);if(l<30)break;const nx=P.x+dx/l*8,ny=P.y+dy/l*8;if(blocked(MAP,nx,ny,4))break;P.x=nx;P.y=ny}
@@ -1620,7 +1627,7 @@ function render(){
  for(const m of W.mons)ents.push({y:m.y,d:()=>{const fl=m.flipBase?m.face<0:m.face>0;
   const pal=m.slow>0?Object.fromEntries(Object.entries(m.pal).map(([k,v])=>[k,k==='k'?'#0a2a40':'#9fd8ff'])):m.pal;
   drawEnt(m.tpl,pal,m.x,m.y,m.sc,fl,m.flash>0,true,m.atkT);
-  const top=m.y-16*m.sc-3;tagF(m.x,top-3,(m.boss?'👑 ':'')+`Lv${m.lv} ${m.name}`,m.boss?'#ff9a6a':'#ffffff',m.boss?5.5:4);hpbar(m.x,top,m.boss?40:16,m.hp/m.max,m.boss?'#ff4a2a':'#e04646');
+  const top=m.y-16*m.sc-3;tagF(m.x,top-3,(m.boss?'👑 ':'')+`Lv${m.lvText||m.lv} ${m.name}`,m.boss?'#ff9a6a':'#ffffff',m.boss?5.5:4);hpbar(m.x,top,m.boss?40:16,m.hp/m.max,m.boss?'#ff4a2a':'#e04646');
   if(m.stun>0)tagF(m.x,top-9,'💫','#fff',5)}});
  for(const b of W.bots)ents.push({y:b.y,d:()=>{const j=JOB(b.job);drawEnt(j.tpl,j.pal,b.x,b.y,b.job==='gia'?1.4:b.job==='dwf'?.75:1,b.flip,false,b.moving,b.atkT);tagF(b.x,b.y-19,`${b.name}`,'#d8d0f0',4.5);tagF(b.x,b.y-14.5,`Lv${b.lv} ${j.name}`,'#a8a0c8',3.5);if(b.say&&t-b.say.t<5)bubble(b.x,b.y-24,b.say.txt)}});
  for(const p of PEERS.values()){const pr=p.presence;if(!pr||p.isMe||pr.m!==MAP.id||p.rx==null)continue;if(MAP.raid&&(!PARTY.pt||pr.pt!==PARTY.pt))continue;let j;try{j=JOB(pr.j)}catch(e){continue}if(!JD[pr.j])continue;
@@ -2197,9 +2204,9 @@ function openTrade(){if(!TR)return;const T_=TR,nm=peerName(T_.peer);
 function openRaid(){
  const cl=P.raids||{};
  openLayer(`${head('⚔️ 레이드')}${PARTY.pt?`<p class="muted" style="margin-bottom:6px">👥 파티 ${partyMembers().length+1}명 · ${isLeader()?'입장하면 파티원 모두에게 참가 요청이 갑니다. 몬스터 체력·공격이 인원수만큼 배로 세져요.':'파티 레이드는 파티장이 시작합니다.'}</p>`:''}<p class="muted">웨이브를 모두 쓰러뜨리고 마지막 보스를 잡으면 클리어. 제한 시간 안에 못 잡거나 쓰러지면 실패예요. 레이드 몬스터는 다시 생기지 않고, 장비는 클리어 보상으로만 나옵니다.</p>
- ${RAIDS.filter(d=>!d.hidden&&d.uni===uniOf()).map(d=>{const lvOk=P.lv>=d.lv,reqOk=!d.req||(cl[d.req]||0)>0,ok=lvOk&&reqOk;const best=d.items.reduce((a,b)=>Math.max(a,b[0]),0);
-  return `<div class="row" style="flex-wrap:wrap"><div class="f" style="min-width:65%"><b style="color:${d.col};text-shadow:0 0 1px #000">${d.name}</b><span class="muted">${d.desc}<br>입장 Lv ${d.lv}${d.req?` · ${RAIDS.find(x=>x.id===d.req).short} 레이드 클리어 필요`:''} · 몬스터 Lv ${d.mlv[0]}~${d.mlv[1]} · 웨이브 ${d.waves.length}개 + 보스 · ${Math.round(d.time/60)}분<br>보상: ${d.gold.toLocaleString()}G · [${RAR[best].n}] 장비 ${d.items.length}개${cl[d.id]?` · 클리어 ${cl[d.id]}회`:''}</span></div>
-  <button class="btn ${ok?'pri':''}" data-raid="${d.id}" ${ok?'':'disabled'}>${!lvOk?'Lv '+d.lv:!reqOk?'잠김':'입장'}</button></div>`}).join('')}`,
+ ${RAIDS.filter(d=>!d.hidden&&d.uni===uniOf()).map(d=>{const lvOk=P.lv>=d.lv,reqOk=!d.req||(cl[d.req]||0)>0,left=raidDailyLeft(d),ok=lvOk&&reqOk&&left>0;const best=d.items.reduce((a,b)=>Math.max(a,b[0]),0);
+  return `<div class="row" style="flex-wrap:wrap"><div class="f" style="min-width:65%"><b style="color:${d.col};text-shadow:0 0 1px #000">${d.name}</b><span class="muted">${d.desc}<br>입장 Lv ${d.lv}${d.req?` · ${RAIDS.find(x=>x.id===d.req).name} 클리어 필요`:''} · 몬스터 Lv ${d.mlv[0]}~${d.mlv[1]}${d.lvText?` · 보스 Lv ${d.lvText}`:''} · 웨이브 ${d.waves.length}개 + 보스 · ${Math.round(d.time/60)}분<br>보상: ${d.gold.toLocaleString()}G · [${RAR[best].n}] 장비 ${d.items.length}개${cl[d.id]?` · 클리어 ${cl[d.id]}회`:''}</span></div>
+  <button class="btn ${ok?'pri':''}" data-raid="${d.id}" ${ok?'':'disabled'}>${!lvOk?'Lv '+d.lv:!reqOk?'잠김':left<=0?'오늘 끝':'입장'}${d.daily&&lvOk&&reqOk?` (${Math.max(0,left)}/${d.daily})`:''}</button></div>`}).join('')}`,
  root=>root.querySelectorAll('[data-raid]').forEach(b=>b.onclick=()=>{const d=RAIDS.find(x=>x.id===b.dataset.raid);ask(`<b>${d.name}</b>에 입장할까요?<br><span class="muted">제한 시간 ${Math.round(d.time/60)}분 · 물약을 넉넉히 챙기세요.</span>`,()=>partyStartRaid(d),openRaid)}));
 }
 function openTele(){
@@ -2583,6 +2590,11 @@ function cloneKind(base,key,name,deg,boss){const d=MD[base];if(!d||MD[key])retur
 /* 우주별 레이드 */
 for(const u of [2,3]){const off=(u-1)*1000;for(const b of RAIDS.filter(x=>/^raid\d$/.test(x.id))){RAIDS.push({...b,id:b.id+'_u'+u,name:`[${u===2?'제2':'제3'}우주] `+b.name,lv:b.lv+off,req:b.req?b.req+'_u'+u:undefined,mlv:[b.mlv[0]+off,b.mlv[1]+off],boss:b.boss.map(([k,l])=>[k,l+off]),gold:b.gold*(u===2?10:50),items:b.items.map(([r,l],i)=>[u===3&&i===0&&/^raid[45]$/.test(b.id)?6:r,Math.min(l+off,3000)]),uni:u,back:{map:u===2?'u2_hub':'u3_hub',x:20.5,y:24}})}}
 RAIDS.push({id:'pri_arena',name:'태초의 시련',short:'태초',lv:2000,hidden:1,theme:'castle',tint:'rgba(255,240,200,.12)',mobs:[],mlv:[1,1],waves:[],boss:[['priLord',3200]],gold:0,expMul:0,items:[],time:600,col:'#fff3a0',desc:'',uni:3,back:{map:'u3_hub',x:20.5,y:24}});
+// 태초의 우주 레이드: 최대 레벨을 아득히 넘는 보스
+MD.pAvatar=['태초의 화신',MD.godOfGods[1],{...MD.godOfGods[2],Y:'#ff9ae8',H:'#ffffff',w:'#8affe0',R:'#fff3a0',e:'#3fa0ff'},20000,MD.godOfGods[4],MD.godOfGods[5],MD.godOfGods[6],MD.godOfGods[7],MD.godOfGods[8],1];
+BOSS_SK.pAvatar=[['창세의 일격','beam',3.5,{w:22,col:'#ffffff',pct:.45}],['천지개벽','ring',1.8,{n:24,col:'#fff3a0',pct:.06}],['태초의 운석','meteor',2.2,{n:12,col:'#ff9ae8',pct:.12}],['절대 영역','nova',3,{r:110,slow:1,pct:.30}],['신 소환','summon',0,{k:'godSoldier',n:4,maxLv:9000}]];
+LOOT.pAvatar='태초의 결정';
+RAIDS.push({id:'raid_p',name:'태초의 왕좌',short:'태초',lv:3500,req:'raid5_u3',theme:'divine',tint:'rgba(255,230,160,.14)',mobs:['godSoldier','valkyrie','titanGuard','chaosGolem','abyssWyrm'],mlv:[8000,10000],waves:[6,8,10],boss:[['pAvatar',20000]],bossHp:5,lvText:'???',gold:50000000,expMul:0,items:[[7,4000]],time:600,col:'#ffffff',desc:'최대 레벨을 아득히 넘는 태초의 화신이 기다린다. 10초마다 태초의 맥박, 체력 절반부터 붕괴 장판. 하루 3회.',uni:4,daily:3,pct:1,back:{map:'p_village',x:32.5,y:30.6}});
 for(const r of RAIDS){if(r.uni==null)r.uni=r.id==='gogarena'?4:1}
 {const g=RAIDS.find(r=>r.id==='gogarena');if(g)g.back={map:'p_gogsanc',x:11,y:12}}
 function raidBack(){const b=W.raid&&W.raid.def&&W.raid.def.back;if(b)changeMap(b.map,b.x*TS,b.y*TS);else changeMap('village',RAID_BACK.x,RAID_BACK.y)}
@@ -2878,7 +2890,8 @@ function mshopTalk(n){const st=mshopStock();P.mshop=P.mshop&&P.mshop.h===st.h?P.
  openLayer(`${head('🔮 마법 상점')}<p class="muted">속성 구슬은 귀한 물건이라 한 시간에 몇 개씩만 들어온다네. 하나씩만 살 수 있어.</p><p><b>⏳ 다음 입고까지 ${mm}분 ${ss}초</b></p>
  ${st.items.map((e,i)=>{const sold=P.mshop.b.includes(i);return `<div class="row"><div class="f"><b>${ELEM[e].e} ${ELEM[e].n}의 구슬</b><span class="muted">${MSHOP_PRICE.toLocaleString()}G</span></div><button class="btn ${sold?'':'pri'}" data-mbuy="${i}" ${sold||P.gold<MSHOP_PRICE?'disabled':''}>${sold?'구매함':P.gold<MSHOP_PRICE?'골드 부족':'구매'}</button></div>`}).join('')}`,
  root=>root.querySelectorAll('[data-mbuy]').forEach(b=>b.onclick=()=>{const i=+b.dataset.mbuy,e=st.items[i];if(P.mshop.b.includes(i)||P.gold<MSHOP_PRICE)return;P.gold-=MSHOP_PRICE;P.mshop.b.push(i);P.orbs=P.orbs||{};P.orbs[e]=(P.orbs[e]||0)+1;sfx('coin');toast(`${ELEM[e].e} ${ELEM[e].n}의 구슬을 샀다!`);save(true);mshopTalk(n)}))}
-function addElemNpcs(){const v=MAPS.village;if(!v||!v.doors)return;const sm=v.doors.smith,sh=v.doors.shop;
+function addElemNpcs(){{const pv=MAPS.p_village;if(pv&&!pv.npcs.some(n=>n.role==='raid')){const a=pv.spawnAt||{x:pv.w*TS/2,y:pv.h*TS/2};const p=placeNear(pv,Math.floor(a.x/TS)-4,Math.floor(a.y/TS)-2);pv.npcs.push({name:'태초의 레이드 관리관',tpl:'knight',pal:{...BASEPAL.knight,A:'#fff3c0',a:'#c8a050',R:'#ff9ae8'},role:'raid',x:p.x,y:p.y})}}
+ const v=MAPS.village;if(!v||!v.doors)return;const sm=v.doors.smith,sh=v.doors.shop;
  const p1=placeNear(v,sm[0]-2,sm[1]+1),p2=placeNear(v,sh[0]+2,sh[1]+1);
  v.npcs.push({name:'마법 대장장이 일렉트라',tpl:'mage',pal:{...BASEPAL.mage,P:'#5a2a8a',p:'#3a1a5a',Y:'#ff9a3a'},role:'msmith',x:p1.x,y:p1.y},{name:'마법 상점 세레스',tpl:'mage',pal:{...BASEPAL.mage,P:'#2a6a6a',p:'#1a4a4a',Y:'#9ff0ff'},role:'mshop',x:p2.x,y:p2.y})}
 (async function boot(){
