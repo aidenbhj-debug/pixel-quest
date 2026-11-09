@@ -1355,7 +1355,16 @@ addEventListener('pointerdown',()=>audio(),true);addEventListener('keydown',()=>
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.btn,.ib,.job,.node'))sfx('click')},true);
 setTimeout(saveSfx,0);
 function VIEWK(){if(window.__viewk==null){let v=1.45;try{const s=localStorage.getItem('pqo-view');if(s)v=+s||1.45}catch(e){}window.__viewk=Math.min(2.2,Math.max(1,v))}return window.__viewk}
-function ensureCanvas(m){if(m.canvas)return;if(m.src&&MAPS[m.src]){const o=MAPS[m.src];if(!o.canvas)renderMap(o);m.canvas=o.canvas;m.mini=o.mini;return}renderMap(m)}
+/* ===== 우주별 외형 ===== */
+const UNI_LOOK={2:{h:165,s:1.3,b:1.0,t:[170,120,255,.10],fx:'shard',name:'뒤틀린 거울빛'},3:{h:110,s:1.2,b:.75,t:[30,20,120,.25],fx:'star',name:'성운빛'},4:{h:-14,s:.85,b:1.12,t:[255,214,140,.16],fx:'mote',name:'태초의 금빛'}};
+function recolorCv(cv,L){if(!cv)return;try{const c=cv.getContext('2d'),im=c.getImageData(0,0,cv.width,cv.height),d=im.data;const a=L.h*Math.PI/180,co=Math.cos(a),si=Math.sin(a);
+ const M=[.213+co*.787-si*.213,.715-co*.715-si*.715,.072-co*.072+si*.928,.213-co*.213+si*.143,.715+co*.285+si*.140,.072-co*.072-si*.283,.213-co*.213-si*.787,.715-co*.715+si*.715,.072+co*.928+si*.072];
+ const [tr,tg,tb,ta]=L.t;for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;let r=d[i],g=d[i+1],b=d[i+2];let R=M[0]*r+M[1]*g+M[2]*b,G=M[3]*r+M[4]*g+M[5]*b,B=M[6]*r+M[7]*g+M[8]*b;const y=.2126*R+.7152*G+.0722*B;
+  R=(y+(R-y)*L.s)*L.b;G=(y+(G-y)*L.s)*L.b;B=(y+(B-y)*L.s)*L.b;d[i]=R*(1-ta)+tr*ta;d[i+1]=G*(1-ta)+tg*ta;d[i+2]=B*(1-ta)+tb*ta}c.putImageData(im,0,0)}catch(e){}}
+function copyCv(cv){if(!cv)return cv;const n=document.createElement('canvas');n.width=cv.width;n.height=cv.height;n.getContext('2d').drawImage(cv,0,0);return n}
+function ensureCanvas(m){if(m.canvas)return;const L=UNI_LOOK[m.uni];
+ if(m.src&&MAPS[m.src]){const o=MAPS[m.src];if(!o.canvas)renderMap(o);if(L){m.canvas=copyCv(o.canvas);m.mini=copyCv(o.mini);recolorCv(m.canvas,L);recolorCv(m.mini,L)}else{m.canvas=o.canvas;m.mini=o.mini}return}
+ renderMap(m);if(L){recolorCv(m.canvas,L);recolorCv(m.mini,L)}}
 function freeCanvases(cur){for(const k in MAPS){const o=MAPS[k];if(!o.canvas||o===cur||k==='village'||cur.src===k)continue;o.canvas=null;o.mini=null}}
 function changeMap(id,x,y){
  sfx('warp');setTimeout(storyCheck,900);
@@ -1649,6 +1658,8 @@ function render(){
  // 어둠(광산)
  if(MAP.light&&!MAP.safe){const g=ctx.createRadialGradient(F0.x,F0.y-8,30,F0.x,F0.y-8,120);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.82)');ctx.fillStyle=g;ctx.fillRect(cx,cy,VW,VH)}
  const tint=MAP.tint||{abyss:'rgba(40,0,60,.28)',chaos:'rgba(80,0,80,.12)',divine:'rgba(255,230,150,.08)',forest:'rgba(20,10,40,.22)',swamp:'rgba(40,60,20,.18)',snow:'rgba(200,230,255,.10)',volcano:'rgba(120,30,0,.14)'}[MAP.theme];if(tint){ctx.fillStyle=tint;ctx.fillRect(cx,cy,VW,VH)}
+ {const L=UNI_LOOK[MAP.uni];if(L){ctx.save();for(let i=0;i<34;i++){const sx=cx+((i*61+t*(6+i%5)*(i%2?1:-1))%VW+VW)%VW,sy=cy+((i*89+t*(8+i%4)*(L.fx==='mote'?-1:1))%VH+VH)%VH,al=.35+.35*Math.sin(t*2+i);
+  if(L.fx==='shard'){ctx.fillStyle=`rgba(${i%2?'200,150,255':'120,240,255'},${al})`;ctx.fillRect(sx,sy,1,3);ctx.fillRect(sx-1,sy+1,3,1)}else if(L.fx==='star'){ctx.fillStyle=`rgba(${i%3?'220,220,255':'255,180,255'},${al})`;ctx.fillRect(sx,sy,1,1);if(i%7===0){ctx.fillRect(sx-1,sy,3,1);ctx.fillRect(sx,sy-1,1,3)}}else{ctx.fillStyle=`rgba(255,230,150,${al})`;ctx.fillRect(sx,sy,2,2)}}ctx.restore()}}
  if(MAP.theme==='snow'){ctx.fillStyle='rgba(255,255,255,.85)';for(let i=0;i<40;i++){const sx=cx+((i*53+t*12*(1+i%3))%VW),sy=cy+((i*97+t*20*(1+i%2))%VH);ctx.fillRect(sx,sy,1,1)}}
  // 미니 위치 표시
  ctx.setTransform(1,0,0,1,0,0);
